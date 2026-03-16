@@ -333,6 +333,18 @@ const Dashboard = () => {
           </Button>
         </a>
 
+        {isAdmin && (
+          <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/columns")}>
+            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
+              <Settings className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">コラム管理</p>
+              <p className="text-xs text-muted-foreground">コラムの作成・編集・公開</p>
+            </div>
+          </Button>
+        )}
+
         <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-muted-foreground" onClick={signOut}>
           <LogOut className="h-4 w-4" />
           ログアウト
