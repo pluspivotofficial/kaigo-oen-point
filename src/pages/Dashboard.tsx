@@ -12,7 +12,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   return (
-    <AppLayout title="ケアポイント">
+    <AppLayout title="ホップポイント">
       {/* Points Hero */}
       <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6 animate-pulse-glow">
         <CardContent className="p-6 text-center">
