@@ -320,13 +320,13 @@ const Dashboard = () => {
         </Button>
 
         <a href="https://hop-kaigo.jp/register/seeker" target="_blank" rel="noopener noreferrer" className="block">
-          <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 text-left">
+          <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 text-left whitespace-normal">
             <div className="h-9 w-9 rounded-lg bg-reward-gold/10 flex items-center justify-center flex-shrink-0">
               <ExternalLink className="h-5 w-5 text-reward-gold" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="font-semibold text-sm">ポイント有効化・還元サイト</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed break-words">
                 会員登録→「仕事を開始」でポイント有効化。以降は累計勤務時間に応じて1時間=1pt加算されます。
               </p>
             </div>
