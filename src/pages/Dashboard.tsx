@@ -239,7 +239,52 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Quick Actions */}
+      {/* Columns Section */}
+      {columns.length > 0 && (
+        <>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+            コラム
+          </h2>
+          <div className="space-y-3 mb-6">
+            {columns.map((col) => (
+              <Card
+                key={col.id}
+                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/column/${col.id}`)}
+              >
+                <CardContent className="p-0">
+                  <div className="flex">
+                    {col.thumbnail_url && (
+                      <img
+                        src={col.thumbnail_url}
+                        alt=""
+                        className="h-24 w-24 object-cover shrink-0"
+                      />
+                    )}
+                    <div className="p-3 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          {CATEGORY_LABELS[col.category] || col.category}
+                        </Badge>
+                        {col.published_at && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(col.published_at).toLocaleDateString("ja-JP")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-semibold text-sm leading-snug line-clamp-2">{col.title}</p>
+                      {col.excerpt && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{col.excerpt}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
       <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
         クイックアクション
       </h2>
