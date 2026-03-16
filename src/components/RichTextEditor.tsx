@@ -22,7 +22,7 @@ interface RichTextEditorProps {
 const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({}),
       Underline,
       Image,
       Link.configure({ openOnClick: false }),
