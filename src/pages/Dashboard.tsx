@@ -71,7 +71,8 @@ const Dashboard = () => {
   const [prefecture, setPrefecture] = useState<string | null>(null);
   const [prefectureLoaded, setPrefectureLoaded] = useState(false);
   const [savingPrefecture, setSavingPrefecture] = useState(false);
-
+  const [columns, setColumns] = useState<ColumnPreview[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     if (!user) return;
 
