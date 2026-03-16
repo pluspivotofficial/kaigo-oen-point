@@ -99,6 +99,22 @@ const Dashboard = () => {
         setPrefecture(data?.prefecture ?? null);
         setPrefectureLoaded(true);
       });
+
+    // Fetch published columns
+    supabase.from("columns_articles")
+      .select("id, title, excerpt, thumbnail_url, category, published_at")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(5)
+      .then(({ data }) => {
+        if (data) setColumns(data as ColumnPreview[]);
+      });
+
+    // Check admin role
+    supabase.from("user_roles").select("role").eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data?.some((r: any) => r.role === "admin")) setIsAdmin(true);
+      });
   }, [user]);
 
   const handleSavePrefecture = async (value: string) => {
