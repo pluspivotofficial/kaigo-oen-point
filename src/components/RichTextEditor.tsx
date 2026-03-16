@@ -22,7 +22,7 @@ interface RichTextEditorProps {
 const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({}),
       Underline,
       Image,
       Link.configure({ openOnClick: false }),
@@ -76,33 +76,33 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
   return (
     <div className="border border-input rounded-lg overflow-hidden">
       <div className="flex flex-wrap gap-0.5 p-1.5 border-b border-border bg-muted/30">
-        <ToolBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleBold().run()} active={editor.isActive("bold")}>
           <Bold className="h-4 w-4" />
         </ToolBtn>
-        <ToolBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleItalic().run()} active={editor.isActive("italic")}>
           <Italic className="h-4 w-4" />
         </ToolBtn>
-        <ToolBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive("underline")}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleUnderline().run()} active={editor.isActive("underline")}>
           <UnderlineIcon className="h-4 w-4" />
         </ToolBtn>
-        <ToolBtn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleStrike().run()} active={editor.isActive("strike")}>
           <Strikethrough className="h-4 w-4" />
         </ToolBtn>
         <div className="w-px bg-border mx-1" />
-        <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })}>
           <Heading1 className="h-4 w-4" />
         </ToolBtn>
-        <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })}>
           <Heading2 className="h-4 w-4" />
         </ToolBtn>
         <div className="w-px bg-border mx-1" />
-        <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleBulletList().run()} active={editor.isActive("bulletList")}>
           <List className="h-4 w-4" />
         </ToolBtn>
-        <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleOrderedList().run()} active={editor.isActive("orderedList")}>
           <ListOrdered className="h-4 w-4" />
         </ToolBtn>
-        <ToolBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).toggleBlockquote().run()} active={editor.isActive("blockquote")}>
           <Quote className="h-4 w-4" />
         </ToolBtn>
         <div className="w-px bg-border mx-1" />
