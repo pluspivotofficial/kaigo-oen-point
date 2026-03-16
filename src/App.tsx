@@ -10,6 +10,8 @@ import PointsPage from "./pages/PointsPage";
 import ReferralPage from "./pages/ReferralPage";
 import AuthPage from "./pages/AuthPage";
 import PrefectureRankingPage from "./pages/PrefectureRankingPage";
+import AdminColumnsPage from "./pages/AdminColumnsPage";
+import ColumnDetailPage from "./pages/ColumnDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => (
             <Route path="/points" element={<ProtectedRoute><PointsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/ranking" element={<ProtectedRoute><PrefectureRankingPage /></ProtectedRoute>} />
+            <Route path="/column/:id" element={<ProtectedRoute><ColumnDetailPage /></ProtectedRoute>} />
+            <Route path="/admin/columns" element={<ProtectedRoute><AdminColumnsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

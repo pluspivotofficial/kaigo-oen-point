@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin } from "lucide-react";
+import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,24 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { PREFECTURES } from "@/lib/prefectures";
 import { toast } from "@/hooks/use-toast";
+
+interface ColumnPreview {
+  id: string;
+  title: string;
+  excerpt: string | null;
+  thumbnail_url: string | null;
+  category: string;
+  published_at: string | null;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "care-tips": "介護のコツ",
+  "health": "健康管理",
+  "career": "キャリア",
+  "lifestyle": "ライフスタイル",
+  "news": "ニュース",
+  "general": "その他",
+};
 
 const MOCK_NOTICES = [
   {
@@ -53,7 +71,8 @@ const Dashboard = () => {
   const [prefecture, setPrefecture] = useState<string | null>(null);
   const [prefectureLoaded, setPrefectureLoaded] = useState(false);
   const [savingPrefecture, setSavingPrefecture] = useState(false);
-
+  const [columns, setColumns] = useState<ColumnPreview[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     if (!user) return;
 
@@ -79,6 +98,22 @@ const Dashboard = () => {
       .then(({ data }) => {
         setPrefecture(data?.prefecture ?? null);
         setPrefectureLoaded(true);
+      });
+
+    // Fetch published columns
+    supabase.from("columns_articles")
+      .select("id, title, excerpt, thumbnail_url, category, published_at")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(5)
+      .then(({ data }) => {
+        if (data) setColumns(data as ColumnPreview[]);
+      });
+
+    // Check admin role
+    supabase.from("user_roles").select("role").eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data?.some((r: any) => r.role === "admin")) setIsAdmin(true);
       });
   }, [user]);
 
@@ -204,7 +239,52 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Quick Actions */}
+      {/* Columns Section */}
+      {columns.length > 0 && (
+        <>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+            コラム
+          </h2>
+          <div className="space-y-3 mb-6">
+            {columns.map((col) => (
+              <Card
+                key={col.id}
+                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/column/${col.id}`)}
+              >
+                <CardContent className="p-0">
+                  <div className="flex">
+                    {col.thumbnail_url && (
+                      <img
+                        src={col.thumbnail_url}
+                        alt=""
+                        className="h-24 w-24 object-cover shrink-0"
+                      />
+                    )}
+                    <div className="p-3 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          {CATEGORY_LABELS[col.category] || col.category}
+                        </Badge>
+                        {col.published_at && (
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(col.published_at).toLocaleDateString("ja-JP")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-semibold text-sm leading-snug line-clamp-2">{col.title}</p>
+                      {col.excerpt && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{col.excerpt}</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
       <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
         クイックアクション
       </h2>
@@ -252,6 +332,18 @@ const Dashboard = () => {
             </div>
           </Button>
         </a>
+
+        {isAdmin && (
+          <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/columns")}>
+            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
+              <Settings className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">コラム管理</p>
+              <p className="text-xs text-muted-foreground">コラムの作成・編集・公開</p>
+            </div>
+          </Button>
+        )}
 
         <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-muted-foreground" onClick={signOut}>
           <LogOut className="h-4 w-4" />
