@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut } from "lucide-react";
+import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
+import { PREFECTURES } from "@/lib/prefectures";
+import { toast } from "@/hooks/use-toast";
 
 const MOCK_NOTICES = [
   {
@@ -47,6 +50,9 @@ const Dashboard = () => {
   const [totalPoints, setTotalPoints] = useState(0);
   const [monthlyPoints, setMonthlyPoints] = useState(0);
   const [monthlyShifts, setMonthlyShifts] = useState(0);
+  const [prefecture, setPrefecture] = useState<string | null>(null);
+  const [prefectureLoaded, setPrefectureLoaded] = useState(false);
+  const [savingPrefecture, setSavingPrefecture] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -67,10 +73,69 @@ const Dashboard = () => {
           setMonthlyPoints(data.reduce((sum, r) => sum + r.hours, 0));
         }
       });
+
+    // Get prefecture
+    supabase.from("profiles").select("prefecture").eq("user_id", user.id).single()
+      .then(({ data }) => {
+        setPrefecture(data?.prefecture ?? null);
+        setPrefectureLoaded(true);
+      });
   }, [user]);
+
+  const handleSavePrefecture = async (value: string) => {
+    if (!user) return;
+    setSavingPrefecture(true);
+    const { error } = await supabase.from("profiles").update({ prefecture: value }).eq("user_id", user.id);
+    if (error) {
+      toast({ title: "エラー", description: error.message, variant: "destructive" });
+    } else {
+      setPrefecture(value);
+      toast({ title: "居住地を登録しました！", description: `${value}で都道府県チャレンジに参加します` });
+    }
+    setSavingPrefecture(false);
+  };
 
   return (
     <AppLayout title="ホップポイント">
+      {/* Prefecture Setup Banner */}
+      {prefectureLoaded && !prefecture && (
+        <Card className="mb-5 border-secondary/30 bg-secondary/5">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-secondary" />
+              <span className="font-semibold text-sm">居住地を登録しよう！</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              都道府県を登録すると、同じ地域のみんなと一緒に累計稼働時間チャレンジに参加できます。
+            </p>
+            <Select onValueChange={handleSavePrefecture} disabled={savingPrefecture}>
+              <SelectTrigger>
+                <SelectValue placeholder="都道府県を選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {PREFECTURES.map((pref) => (
+                  <SelectItem key={pref} value={pref}>{pref}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Prefecture Badge (if set) */}
+      {prefecture && (
+        <div className="flex items-center gap-2 mb-4">
+          <MapPin className="h-4 w-4 text-secondary" />
+          <Badge variant="secondary" className="text-xs">{prefecture}</Badge>
+          <button
+            className="text-[10px] text-muted-foreground hover:text-foreground underline"
+            onClick={() => setPrefecture(null)}
+          >
+            変更
+          </button>
+        </div>
+      )}
+
       {/* Points Hero */}
       <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6 animate-pulse-glow">
         <CardContent className="p-6 text-center">
