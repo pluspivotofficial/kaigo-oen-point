@@ -47,6 +47,7 @@ const ShiftPage = () => {
   const [endTime, setEndTime] = useState("");
   const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [facilityName, setFacilityName] = useState("");
 
   useEffect(() => {
     if (!user) return;
