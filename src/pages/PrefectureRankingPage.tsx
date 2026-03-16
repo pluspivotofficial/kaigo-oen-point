@@ -58,7 +58,7 @@ const PrefectureRankingPage = () => {
   const getRankIcon = (index: number) => {
     if (index === 0) return <Trophy className="h-5 w-5 text-reward-gold" />;
     if (index === 1) return <Trophy className="h-5 w-5 text-muted-foreground" />;
-    if (index === 2) return <Trophy className="h-5 w-5 text-orange-400" />;
+    if (index === 2) return <Trophy className="h-5 w-5 text-accent-foreground" />;
     return <span className="text-sm font-bold text-muted-foreground w-5 text-center">{index + 1}</span>;
   };
 
