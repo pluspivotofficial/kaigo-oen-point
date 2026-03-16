@@ -14,7 +14,140 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      points_history: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          points: number
+          shift_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          points: number
+          shift_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          points?: number
+          shift_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_history_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          facility_name: string | null
+          first_launch_date: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          facility_name?: string | null
+          first_launch_date?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          facility_name?: string | null
+          first_launch_date?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          friend_contact: string
+          friend_name: string
+          id: string
+          points_awarded: boolean
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          friend_contact: string
+          friend_name: string
+          id?: string
+          points_awarded?: boolean
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          friend_contact?: string
+          friend_name?: string
+          id?: string
+          points_awarded?: boolean
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      shifts: {
+        Row: {
+          created_at: string
+          end_time: string
+          hours: number
+          id: string
+          points_earned: number
+          shift_date: string
+          shift_type: string
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          hours?: number
+          id?: string
+          points_earned?: number
+          shift_date: string
+          shift_type: string
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          hours?: number
+          id?: string
+          points_earned?: number
+          shift_date?: string
+          shift_type?: string
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
