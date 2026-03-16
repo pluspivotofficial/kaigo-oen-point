@@ -170,14 +170,16 @@ const Dashboard = () => {
         >
           <Button
             variant="outline"
-            className="w-full justify-start gap-3 h-14 text-left"
+            className="w-full justify-start gap-3 h-auto py-3 text-left"
           >
-            <div className="h-9 w-9 rounded-lg bg-reward-gold/10 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-lg bg-reward-gold/10 flex items-center justify-center flex-shrink-0">
               <ExternalLink className="h-5 w-5 text-reward-gold" />
             </div>
             <div>
-              <p className="font-semibold text-sm">ポイント還元サイト</p>
-              <p className="text-xs text-muted-foreground">登録して還元を受けましょう</p>
+              <p className="font-semibold text-sm">ポイント有効化・還元サイト</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                会員登録→「仕事を開始」でポイント有効化。以降は累計勤務時間に応じて1時間=1pt加算されます。
+              </p>
             </div>
           </Button>
         </a>
