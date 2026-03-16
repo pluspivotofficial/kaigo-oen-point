@@ -102,6 +102,7 @@ const ShiftPage = () => {
       end_time: endTime,
       hours,
       points_earned: hours,
+      facility_name: facilityName || null,
     }).select().single();
 
     if (shiftError) {
