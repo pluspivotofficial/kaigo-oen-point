@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Coins, LogIn, UserPlus } from "lucide-react";
+import { Coins, LogIn, UserPlus, Gift, ArrowRight, Clock, ExternalLink } from "lucide-react";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -52,9 +52,10 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-5">
+    <div className="min-h-screen bg-background flex items-center justify-center px-5 py-8">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
+        {/* Logo and Title */}
+        <div className="text-center mb-6">
           <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
             <Coins className="h-8 w-8 text-primary-foreground" />
           </div>
@@ -62,6 +63,46 @@ const AuthPage = () => {
           <p className="text-sm text-muted-foreground mt-1">介護派遣ポイ活アプリ</p>
         </div>
 
+        {/* Point Benefits Card */}
+        <Card className="mb-4 border-primary/20 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Gift className="h-5 w-5 text-primary" />
+              <span className="font-semibold text-sm">ホップポイントの特典</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="h-6 w-6 rounded-full bg-reward-gold/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-reward-gold">1</span>
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium">シフト申請でポイントGET</p>
+                  <p className="text-muted-foreground text-xs">申請したシフトに対してポイントが付与されます</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="h-6 w-6 rounded-full bg-reward-gold/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-reward-gold">2</span>
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium">勤務でさらにポイントUP</p>
+                  <p className="text-muted-foreground text-xs">会員登録後、実際の勤務時間に応じてポイントが加算</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="h-6 w-6 rounded-full bg-reward-gold/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-reward-gold">3</span>
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium">お友達紹介でボーナス</p>
+                  <p className="text-muted-foreground text-xs">介護士のお友達を紹介して追加ボーナスポイント</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Auth Form Card */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-base text-center">
@@ -122,6 +163,30 @@ const AuthPage = () => {
                 {isLogin ? "アカウントをお持ちでない方はこちら" : "すでにアカウントをお持ちの方はこちら"}
               </button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Point Activation Note */}
+        <Card className="mt-4 border-secondary/20 bg-secondary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="h-4 w-4 text-secondary" />
+              <span className="font-medium text-sm">ポイント有効化について</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              ホップカイゴで会員登録・仕事を開始すると、
+              <span className="text-foreground font-medium">勤務時間に応じて1時間＝1ポイント</span>
+              が自動的に加算されます。
+            </p>
+            <a
+              href="https://hop-kaigo.jp/register/seeker"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 mt-2 text-xs text-secondary hover:underline"
+            >
+              <ExternalLink className="h-3 w-3" />
+              ホップカイゴで会員登録する
+            </a>
           </CardContent>
         </Card>
       </div>
