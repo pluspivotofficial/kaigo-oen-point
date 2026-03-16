@@ -1,12 +1,46 @@
-import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock } from "lucide-react";
+import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import AppLayout from "@/components/AppLayout";
 
 const MOCK_POINTS = 3_250;
 const MOCK_THIS_MONTH = 168;
 const MOCK_SHIFTS_THIS_MONTH = 21;
+
+const MOCK_NOTICES = [
+  {
+    id: 1,
+    type: "campaign" as const,
+    title: "春の紹介キャンペーン開催中！",
+    description: "3/31まで友人紹介で通常の2倍、30,000ポイントもらえる！",
+    icon: Gift,
+    color: "bg-reward-purple/10 text-reward-purple",
+    badge: "キャンペーン",
+    badgeVariant: "default" as const,
+  },
+  {
+    id: 2,
+    type: "info" as const,
+    title: "4月のシフト申請受付開始",
+    description: "4月分のシフト申請が可能になりました。お早めに申請ください。",
+    icon: Megaphone,
+    color: "bg-primary/10 text-primary",
+    badge: "お知らせ",
+    badgeVariant: "secondary" as const,
+  },
+  {
+    id: 3,
+    type: "new" as const,
+    title: "ポイント還元サイトがリニューアル",
+    description: "より使いやすくなりました。新しいサイトをチェック！",
+    icon: Sparkles,
+    color: "bg-secondary/10 text-secondary",
+    badge: "NEW",
+    badgeVariant: "outline" as const,
+  },
+];
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -54,6 +88,31 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Notices & Campaigns */}
+      <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+        お知らせ・キャンペーン
+      </h2>
+      <div className="space-y-3 mb-6">
+        {MOCK_NOTICES.map((notice) => (
+          <Card key={notice.id} className="overflow-hidden">
+            <CardContent className="p-4 flex items-start gap-3">
+              <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${notice.color}`}>
+                <notice.icon className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant={notice.badgeVariant} className="text-[10px] px-1.5 py-0">
+                    {notice.badge}
+                  </Badge>
+                </div>
+                <p className="font-semibold text-sm leading-snug">{notice.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{notice.description}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Quick Actions */}
