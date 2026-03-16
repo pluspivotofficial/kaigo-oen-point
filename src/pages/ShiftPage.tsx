@@ -131,6 +131,7 @@ const ShiftPage = () => {
     setSelectedShift(null);
     setStartTime("");
     setEndTime("");
+    setFacilityName("");
     setSubmitting(false);
   };
 
