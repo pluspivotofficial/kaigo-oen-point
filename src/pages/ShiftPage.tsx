@@ -246,7 +246,10 @@ const ShiftPage = () => {
                       <span className="text-sm font-medium">
                         {new Date(shift.shift_date + "T00:00:00").toLocaleDateString("ja-JP", { month: "short", day: "numeric", weekday: "short" })}
                       </span>
-                      <p className="text-xs text-muted-foreground">{shift.start_time.slice(0, 5)}〜{shift.end_time.slice(0, 5)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {shift.start_time.slice(0, 5)}〜{shift.end_time.slice(0, 5)}
+                        {(shift as any).facility_name && ` @ ${(shift as any).facility_name}`}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
