@@ -188,6 +188,18 @@ const ShiftPage = () => {
 
             {selectedShift && (
               <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="facilityName" className="text-xs flex items-center gap-1">
+                    <Building2 className="h-3.5 w-3.5" />
+                    施設名
+                  </Label>
+                  <Input
+                    id="facilityName"
+                    placeholder="〇〇介護施設"
+                    value={facilityName}
+                    onChange={(e) => setFacilityName(e.target.value)}
+                  />
+                </div>
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Pencil className="h-4 w-4 text-muted-foreground" />
                   時間を編集
