@@ -1,13 +1,12 @@
-import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-
-const MOCK_POINTS = 3_250;
-const MOCK_THIS_MONTH = 168;
-const MOCK_SHIFTS_THIS_MONTH = 21;
 
 const MOCK_NOTICES = [
   {
@@ -44,6 +43,31 @@ const MOCK_NOTICES = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [monthlyPoints, setMonthlyPoints] = useState(0);
+  const [monthlyShifts, setMonthlyShifts] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Total points
+    supabase.from("points_history").select("points").eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data) setTotalPoints(data.reduce((sum, r) => sum + r.points, 0));
+      });
+
+    // Monthly stats
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    supabase.from("shifts").select("hours").eq("user_id", user.id).gte("shift_date", monthStart)
+      .then(({ data }) => {
+        if (data) {
+          setMonthlyShifts(data.length);
+          setMonthlyPoints(data.reduce((sum, r) => sum + r.hours, 0));
+        }
+      });
+  }, [user]);
 
   return (
     <AppLayout title="ホップポイント">
@@ -54,12 +78,12 @@ const Dashboard = () => {
           <div className="flex items-center justify-center gap-2">
             <Coins className="h-8 w-8 text-reward-gold" />
             <span className="text-4xl font-extrabold text-primary-foreground tracking-tight">
-              {MOCK_POINTS.toLocaleString()}
+              {totalPoints.toLocaleString()}
             </span>
             <span className="text-primary-foreground/70 text-sm mt-2">pt</span>
           </div>
           <p className="text-primary-foreground/60 text-xs mt-2">
-            ¥{MOCK_POINTS.toLocaleString()} 相当
+            ¥{totalPoints.toLocaleString()} 相当
           </p>
         </CardContent>
       </Card>
@@ -73,7 +97,7 @@ const Dashboard = () => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">今月獲得</p>
-              <p className="text-lg font-bold text-foreground">{MOCK_THIS_MONTH} pt</p>
+              <p className="text-lg font-bold text-foreground">{monthlyPoints} pt</p>
             </div>
           </CardContent>
         </Card>
@@ -84,7 +108,7 @@ const Dashboard = () => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">今月勤務</p>
-              <p className="text-lg font-bold text-foreground">{MOCK_SHIFTS_THIS_MONTH} 回</p>
+              <p className="text-lg font-bold text-foreground">{monthlyShifts} 回</p>
             </div>
           </CardContent>
         </Card>
@@ -120,11 +144,7 @@ const Dashboard = () => {
         クイックアクション
       </h2>
       <div className="space-y-3">
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-3 h-14 text-left"
-          onClick={() => navigate("/shift")}
-        >
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/shift")}>
           <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <CalendarDays className="h-5 w-5 text-primary" />
           </div>
@@ -134,11 +154,7 @@ const Dashboard = () => {
           </div>
         </Button>
 
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-3 h-14 text-left"
-          onClick={() => navigate("/points")}
-        >
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/points")}>
           <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center">
             <Coins className="h-5 w-5 text-secondary" />
           </div>
@@ -148,11 +164,7 @@ const Dashboard = () => {
           </div>
         </Button>
 
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-3 h-14 text-left"
-          onClick={() => navigate("/referral")}
-        >
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/referral")}>
           <div className="h-9 w-9 rounded-lg bg-reward-purple/10 flex items-center justify-center">
             <Users className="h-5 w-5 text-reward-purple" />
           </div>
@@ -162,16 +174,8 @@ const Dashboard = () => {
           </div>
         </Button>
 
-        <a
-          href="https://hop-kaigo.jp/register/seeker"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
-        >
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-3 h-auto py-3 text-left"
-          >
+        <a href="https://hop-kaigo.jp/register/seeker" target="_blank" rel="noopener noreferrer" className="block">
+          <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 text-left">
             <div className="h-9 w-9 rounded-lg bg-reward-gold/10 flex items-center justify-center flex-shrink-0">
               <ExternalLink className="h-5 w-5 text-reward-gold" />
             </div>
@@ -183,6 +187,11 @@ const Dashboard = () => {
             </div>
           </Button>
         </a>
+
+        <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-muted-foreground" onClick={signOut}>
+          <LogOut className="h-4 w-4" />
+          ログアウト
+        </Button>
       </div>
     </AppLayout>
   );

@@ -1,23 +1,40 @@
+import { useEffect, useState } from "react";
 import { Coins, ArrowUpRight, ArrowDownRight, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 
-const MOCK_HISTORY = [
-  { id: 1, date: "2026-03-15", description: "早番勤務", points: 8, type: "earn" as const },
-  { id: 2, date: "2026-03-14", description: "遅番勤務", points: 8, type: "earn" as const },
-  { id: 3, date: "2026-03-13", description: "夜勤勤務", points: 16, type: "earn" as const },
-  { id: 4, date: "2026-03-10", description: "ポイント還元", points: -500, type: "redeem" as const },
-  { id: 5, date: "2026-03-09", description: "早番勤務", points: 8, type: "earn" as const },
-  { id: 6, date: "2026-03-08", description: "友人紹介ボーナス", points: 15000, type: "bonus" as const },
-  { id: 7, date: "2026-03-07", description: "遅番勤務", points: 8, type: "earn" as const },
-  { id: 8, date: "2026-03-05", description: "早番勤務", points: 8, type: "earn" as const },
-];
-
-const TOTAL_POINTS = 3_250;
+interface PointsRow {
+  id: string;
+  created_at: string;
+  description: string;
+  points: number;
+  type: string;
+}
 
 const PointsPage = () => {
+  const { user } = useAuth();
+  const [history, setHistory] = useState<PointsRow[]>([]);
+  const [totalPoints, setTotalPoints] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("points_history")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) {
+          setHistory(data);
+          setTotalPoints(data.reduce((sum, item) => sum + item.points, 0));
+        }
+      });
+  }, [user]);
+
   return (
     <AppLayout title="ポイント">
       {/* Total Points */}
@@ -27,11 +44,11 @@ const PointsPage = () => {
           <div className="flex items-center justify-center gap-2">
             <Coins className="h-7 w-7 text-reward-gold" />
             <span className="text-3xl font-extrabold text-primary-foreground">
-              {TOTAL_POINTS.toLocaleString()}
+              {totalPoints.toLocaleString()}
             </span>
             <span className="text-primary-foreground/70 text-sm mt-1">pt</span>
           </div>
-          <p className="text-primary-foreground/60 text-xs mt-1">¥{TOTAL_POINTS.toLocaleString()} 相当</p>
+          <p className="text-primary-foreground/60 text-xs mt-1">¥{totalPoints.toLocaleString()} 相当</p>
         </CardContent>
       </Card>
 
@@ -57,35 +74,39 @@ const PointsPage = () => {
           <CardTitle className="text-base">ポイント履歴</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          {MOCK_HISTORY.map((item) => (
-            <div key={item.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-              <div className="flex items-center gap-3">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  item.type === "redeem"
-                    ? "bg-destructive/10"
-                    : item.type === "bonus"
-                    ? "bg-reward-purple/10"
-                    : "bg-secondary/10"
-                }`}>
-                  {item.type === "redeem" ? (
-                    <ArrowDownRight className="h-4 w-4 text-destructive" />
-                  ) : (
-                    <ArrowUpRight className={`h-4 w-4 ${item.type === "bonus" ? "text-reward-purple" : "text-secondary"}`} />
-                  )}
+          {history.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">まだ履歴がありません</p>
+          ) : (
+            history.map((item) => (
+              <div key={item.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                <div className="flex items-center gap-3">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                    item.type === "redeem"
+                      ? "bg-destructive/10"
+                      : item.type === "bonus"
+                      ? "bg-reward-purple/10"
+                      : "bg-secondary/10"
+                  }`}>
+                    {item.type === "redeem" ? (
+                      <ArrowDownRight className="h-4 w-4 text-destructive" />
+                    ) : (
+                      <ArrowUpRight className={`h-4 w-4 ${item.type === "bonus" ? "text-reward-purple" : "text-secondary"}`} />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{item.description}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString("ja-JP")}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium">{item.description}</p>
-                  <p className="text-xs text-muted-foreground">{item.date}</p>
-                </div>
+                <Badge
+                  variant={item.points > 0 ? "default" : "destructive"}
+                  className="font-mono text-xs"
+                >
+                  {item.points > 0 ? "+" : ""}{item.points.toLocaleString()} pt
+                </Badge>
               </div>
-              <Badge
-                variant={item.points > 0 ? "default" : "destructive"}
-                className="font-mono text-xs"
-              >
-                {item.points > 0 ? "+" : ""}{item.points.toLocaleString()} pt
-              </Badge>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
     </AppLayout>
