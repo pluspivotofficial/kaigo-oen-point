@@ -9,6 +9,7 @@ import ShiftPage from "./pages/ShiftPage";
 import PointsPage from "./pages/PointsPage";
 import ReferralPage from "./pages/ReferralPage";
 import AuthPage from "./pages/AuthPage";
+import PrefectureRankingPage from "./pages/PrefectureRankingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/shift" element={<ProtectedRoute><ShiftPage /></ProtectedRoute>} />
             <Route path="/points" element={<ProtectedRoute><PointsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
+            <Route path="/ranking" element={<ProtectedRoute><PrefectureRankingPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

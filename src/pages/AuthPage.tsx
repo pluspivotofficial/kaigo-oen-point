@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Coins, LogIn, UserPlus, Gift, ArrowRight, Clock, ExternalLink } from "lucide-react";
+import { Coins, LogIn, UserPlus, Gift, Clock, ExternalLink, MapPin } from "lucide-react";
+import { PREFECTURES } from "@/lib/prefectures";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -14,6 +16,7 @@ const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [prefecture, setPrefecture] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,15 +29,26 @@ const AuthPage = () => {
         if (error) throw error;
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({
+        if (!prefecture) {
+          toast({ title: "都道府県を選択してください", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { display_name: displayName },
+            data: { display_name: displayName, prefecture },
             emailRedirectTo: window.location.origin,
           },
         });
         if (error) throw error;
+
+        // Update profile with prefecture
+        if (data.user) {
+          await supabase.from("profiles").update({ prefecture }).eq("user_id", data.user.id);
+        }
+
         toast({
           title: "アカウントを作成しました！",
           description: "確認メールをご確認ください。",
@@ -94,8 +108,8 @@ const AuthPage = () => {
                   <span className="text-xs font-bold text-reward-gold">3</span>
                 </div>
                 <div className="text-sm">
-                  <p className="font-medium">お友達紹介でボーナス</p>
-                  <p className="text-muted-foreground text-xs">介護士のお友達を紹介して追加ボーナスポイント</p>
+                  <p className="font-medium">都道府県チャレンジ 🏆</p>
+                  <p className="text-muted-foreground text-xs">同じ都道府県のみんなで累計稼働時間の目標を達成してボーナスポイント！</p>
                 </div>
               </div>
             </div>
@@ -112,16 +126,36 @@ const AuthPage = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">お名前</Label>
-                  <Input
-                    id="displayName"
-                    placeholder="山田 太郎"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required={!isLogin}
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">お名前</Label>
+                    <Input
+                      id="displayName"
+                      placeholder="山田 太郎"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      required={!isLogin}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="prefecture">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" />
+                        都道府県
+                      </span>
+                    </Label>
+                    <Select value={prefecture} onValueChange={setPrefecture}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="都道府県を選択" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PREFECTURES.map((pref) => (
+                          <SelectItem key={pref} value={pref}>{pref}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">メールアドレス</Label>

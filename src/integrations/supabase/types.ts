@@ -52,6 +52,27 @@ export type Database = {
           },
         ]
       }
+      prefecture_milestones: {
+        Row: {
+          achieved_at: string
+          id: string
+          milestone_hours: number
+          prefecture: string
+        }
+        Insert: {
+          achieved_at?: string
+          id?: string
+          milestone_hours: number
+          prefecture: string
+        }
+        Update: {
+          achieved_at?: string
+          id?: string
+          milestone_hours?: number
+          prefecture?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -59,6 +80,7 @@ export type Database = {
           facility_name: string | null
           first_launch_date: string
           id: string
+          prefecture: string | null
           updated_at: string
           user_id: string
         }
@@ -68,6 +90,7 @@ export type Database = {
           facility_name?: string | null
           first_launch_date?: string
           id?: string
+          prefecture?: string | null
           updated_at?: string
           user_id: string
         }
@@ -77,6 +100,7 @@ export type Database = {
           facility_name?: string | null
           first_launch_date?: string
           id?: string
+          prefecture?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -116,6 +140,7 @@ export type Database = {
         Row: {
           created_at: string
           end_time: string
+          facility_name: string | null
           hours: number
           id: string
           points_earned: number
@@ -127,6 +152,7 @@ export type Database = {
         Insert: {
           created_at?: string
           end_time: string
+          facility_name?: string | null
           hours?: number
           id?: string
           points_earned?: number
@@ -138,6 +164,7 @@ export type Database = {
         Update: {
           created_at?: string
           end_time?: string
+          facility_name?: string | null
           hours?: number
           id?: string
           points_earned?: number
@@ -150,7 +177,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      prefecture_hours: {
+        Row: {
+          prefecture: string | null
+          total_hours: number | null
+          user_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

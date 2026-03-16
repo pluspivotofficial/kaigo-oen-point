@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Sun, Sunset, Moon, Check, Pencil } from "lucide-react";
+import { Sun, Sunset, Moon, Check, Pencil, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +47,7 @@ const ShiftPage = () => {
   const [endTime, setEndTime] = useState("");
   const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [facilityName, setFacilityName] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -101,6 +102,7 @@ const ShiftPage = () => {
       end_time: endTime,
       hours,
       points_earned: hours,
+      facility_name: facilityName || null,
     }).select().single();
 
     if (shiftError) {
@@ -129,6 +131,7 @@ const ShiftPage = () => {
     setSelectedShift(null);
     setStartTime("");
     setEndTime("");
+    setFacilityName("");
     setSubmitting(false);
   };
 
@@ -185,6 +188,18 @@ const ShiftPage = () => {
 
             {selectedShift && (
               <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="facilityName" className="text-xs flex items-center gap-1">
+                    <Building2 className="h-3.5 w-3.5" />
+                    施設名
+                  </Label>
+                  <Input
+                    id="facilityName"
+                    placeholder="〇〇介護施設"
+                    value={facilityName}
+                    onChange={(e) => setFacilityName(e.target.value)}
+                  />
+                </div>
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Pencil className="h-4 w-4 text-muted-foreground" />
                   時間を編集
@@ -231,7 +246,10 @@ const ShiftPage = () => {
                       <span className="text-sm font-medium">
                         {new Date(shift.shift_date + "T00:00:00").toLocaleDateString("ja-JP", { month: "short", day: "numeric", weekday: "short" })}
                       </span>
-                      <p className="text-xs text-muted-foreground">{shift.start_time.slice(0, 5)}〜{shift.end_time.slice(0, 5)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {shift.start_time.slice(0, 5)}〜{shift.end_time.slice(0, 5)}
+                        {(shift as any).facility_name && ` @ ${(shift as any).facility_name}`}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
