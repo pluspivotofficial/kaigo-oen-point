@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin } from "lucide-react";
+import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,24 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { PREFECTURES } from "@/lib/prefectures";
 import { toast } from "@/hooks/use-toast";
+
+interface ColumnPreview {
+  id: string;
+  title: string;
+  excerpt: string | null;
+  thumbnail_url: string | null;
+  category: string;
+  published_at: string | null;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "care-tips": "介護のコツ",
+  "health": "健康管理",
+  "career": "キャリア",
+  "lifestyle": "ライフスタイル",
+  "news": "ニュース",
+  "general": "その他",
+};
 
 const MOCK_NOTICES = [
   {
