@@ -5,10 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Coins, LogIn, UserPlus, Gift, Clock, ExternalLink, MapPin } from "lucide-react";
-import { PREFECTURES } from "@/lib/prefectures";
+import { Coins, LogIn, UserPlus, Gift, Clock, ExternalLink } from "lucide-react";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -16,7 +14,6 @@ const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [prefecture, setPrefecture] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,26 +26,15 @@ const AuthPage = () => {
         if (error) throw error;
         navigate("/");
       } else {
-        if (!prefecture) {
-          toast({ title: "都道府県を選択してください", variant: "destructive" });
-          setLoading(false);
-          return;
-        }
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { display_name: displayName, prefecture },
+            data: { display_name: displayName },
             emailRedirectTo: window.location.origin,
           },
         });
         if (error) throw error;
-
-        // Update profile with prefecture
-        if (data.user) {
-          await supabase.from("profiles").update({ prefecture }).eq("user_id", data.user.id);
-        }
-
         toast({
           title: "アカウントを作成しました！",
           description: "確認メールをご確認ください。",
@@ -126,36 +112,16 @@ const AuthPage = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="displayName">お名前</Label>
-                    <Input
-                      id="displayName"
-                      placeholder="山田 太郎"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      required={!isLogin}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="prefecture">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        都道府県
-                      </span>
-                    </Label>
-                    <Select value={prefecture} onValueChange={setPrefecture}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="都道府県を選択" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PREFECTURES.map((pref) => (
-                          <SelectItem key={pref} value={pref}>{pref}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">お名前</Label>
+                  <Input
+                    id="displayName"
+                    placeholder="山田 太郎"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    required={!isLogin}
+                  />
+                </div>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">メールアドレス</Label>
