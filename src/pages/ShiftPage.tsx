@@ -94,9 +94,9 @@ const ShiftPage = () => {
               >
                 <div className={cn(
                   "h-10 w-10 rounded-lg flex items-center justify-center",
-                  option.value === "early" && "bg-amber-100 text-amber-600",
-                  option.value === "late" && "bg-orange-100 text-orange-600",
-                  option.value === "night" && "bg-indigo-100 text-indigo-600",
+                  option.value === "early" && "bg-accent text-accent-foreground",
+                  option.value === "late" && "bg-primary/10 text-primary",
+                  option.value === "night" && "bg-reward-purple/10 text-reward-purple",
                 )}>
                   <option.icon className="h-5 w-5" />
                 </div>
