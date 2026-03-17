@@ -12,6 +12,9 @@ import AuthPage from "./pages/AuthPage";
 import PrefectureRankingPage from "./pages/PrefectureRankingPage";
 import AdminColumnsPage from "./pages/AdminColumnsPage";
 import ColumnDetailPage from "./pages/ColumnDetailPage";
+import QuestionsPage from "./pages/QuestionsPage";
+import QuestionDetailPage from "./pages/QuestionDetailPage";
+import AdminQuestionsPage from "./pages/AdminQuestionsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
