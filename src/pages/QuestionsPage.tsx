@@ -1,0 +1,186 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MessageCircleQuestion, Plus, MessageSquare, Clock } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import AppLayout from "@/components/AppLayout";
+
+interface Question {
+  id: string;
+  title: string;
+  body: string;
+  anonymous_name: string;
+  created_at: string;
+  answer_count: number;
+  is_approved: boolean;
+}
+
+const ANONYMOUS_NAMES = [
+  "匿名のカイゴさん", "匿名のホップさん", "匿名のケアさん",
+  "匿名のスマイルさん", "匿名のハートさん", "匿名のスターさん",
+  "匿名のフラワーさん", "匿名のムーンさん", "匿名のサニーさん",
+  "匿名のクローバーさん",
+];
+
+const getRandomAnonymousName = () =>
+  ANONYMOUS_NAMES[Math.floor(Math.random() * ANONYMOUS_NAMES.length)];
+
+const QuestionsPage = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchQuestions = async () => {
+    const { data } = await supabase
+      .from("questions")
+      .select("*")
+      .eq("is_approved", true)
+      .order("created_at", { ascending: false });
+    if (data) setQuestions(data as Question[]);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!user || !title.trim()) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("questions").insert({
+      user_id: user.id,
+      title: title.trim(),
+      body: body.trim(),
+      anonymous_name: getRandomAnonymousName(),
+    });
+    if (error) {
+      toast({ title: "エラー", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "質問を投稿しました", description: "管理者の承認後に公開されます" });
+      setTitle("");
+      setBody("");
+      setDialogOpen(false);
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <AppLayout title="質問箱">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-muted-foreground">
+          みんなの質問に答えよう！
+        </p>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-1.5">
+              <Plus className="h-4 w-4" />
+              質問する
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>質問を投稿する</DialogTitle>
+            </DialogHeader>
+            <p className="text-xs text-muted-foreground">
+              投稿者名は匿名で表示されます。管理者の承認後に公開されます。
+            </p>
+            <div className="space-y-4 mt-2">
+              <div className="space-y-2">
+                <Label htmlFor="q-title">タイトル</Label>
+                <Input
+                  id="q-title"
+                  placeholder="質問のタイトル"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  maxLength={100}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="q-body">詳細（任意）</Label>
+                <Textarea
+                  id="q-body"
+                  placeholder="質問の詳細を書いてください..."
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  maxLength={1000}
+                  rows={4}
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={handleSubmit}
+                disabled={submitting || !title.trim()}
+              >
+                {submitting ? "送信中..." : "投稿する"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {loading ? (
+        <p className="text-center text-muted-foreground py-8 text-sm">読み込み中...</p>
+      ) : questions.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <MessageCircleQuestion className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">まだ質問がありません</p>
+            <p className="text-muted-foreground text-xs mt-1">最初の質問を投稿してみましょう！</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {questions.map((q) => (
+            <Card
+              key={q.id}
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => navigate(`/questions/${q.id}`)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MessageCircleQuestion className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm leading-snug line-clamp-2">{q.title}</p>
+                    {q.body && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{q.body}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(q.created_at).toLocaleDateString("ja-JP")}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {q.anonymous_name}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
+                        <MessageSquare className="h-2.5 w-2.5" />
+                        {q.answer_count}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </AppLayout>
+  );
+};
+
+export default QuestionsPage;
