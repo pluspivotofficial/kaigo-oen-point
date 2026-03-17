@@ -334,15 +334,26 @@ const Dashboard = () => {
         </a>
 
         {isAdmin && (
-          <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/columns")}>
-            <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
-              <Settings className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm">コラム管理</p>
-              <p className="text-xs text-muted-foreground">コラムの作成・編集・公開</p>
-            </div>
-          </Button>
+          <>
+            <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/columns")}>
+              <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
+                <Settings className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">コラム管理</p>
+                <p className="text-xs text-muted-foreground">コラムの作成・編集・公開</p>
+              </div>
+            </Button>
+            <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/questions")}>
+              <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">質問管理</p>
+                <p className="text-xs text-muted-foreground">質問の承認・却下</p>
+              </div>
+            </Button>
+          </>
         )}
 
         <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-muted-foreground" onClick={signOut}>

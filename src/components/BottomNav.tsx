@@ -1,11 +1,11 @@
-import { Home, CalendarDays, Coins, Users, Trophy } from "lucide-react";
+import { Home, CalendarDays, Coins, Users, MessageCircleQuestion } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { path: "/", label: "ホーム", icon: Home },
   { path: "/shift", label: "シフト", icon: CalendarDays },
-  { path: "/ranking", label: "ランキング", icon: Trophy },
+  { path: "/questions", label: "質問箱", icon: MessageCircleQuestion },
   { path: "/points", label: "ポイント", icon: Coins },
   { path: "/referral", label: "紹介", icon: Users },
 ];

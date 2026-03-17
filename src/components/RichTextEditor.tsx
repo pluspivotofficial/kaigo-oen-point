@@ -120,10 +120,10 @@ const RichTextEditor = ({ content, onChange }: RichTextEditorProps) => {
           <ImageIcon className="h-4 w-4" />
         </ToolBtn>
         <div className="w-px bg-border mx-1" />
-        <ToolBtn onClick={() => editor.chain().focus().undo().run()}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).undo().run()}>
           <Undo className="h-4 w-4" />
         </ToolBtn>
-        <ToolBtn onClick={() => editor.chain().focus().redo().run()}>
+        <ToolBtn onClick={() => (editor.chain().focus() as any).redo().run()}>
           <Redo className="h-4 w-4" />
         </ToolBtn>
       </div>

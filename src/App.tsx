@@ -12,6 +12,9 @@ import AuthPage from "./pages/AuthPage";
 import PrefectureRankingPage from "./pages/PrefectureRankingPage";
 import AdminColumnsPage from "./pages/AdminColumnsPage";
 import ColumnDetailPage from "./pages/ColumnDetailPage";
+import QuestionsPage from "./pages/QuestionsPage";
+import QuestionDetailPage from "./pages/QuestionDetailPage";
+import AdminQuestionsPage from "./pages/AdminQuestionsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,7 +41,10 @@ const App = () => (
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/ranking" element={<ProtectedRoute><PrefectureRankingPage /></ProtectedRoute>} />
             <Route path="/column/:id" element={<ProtectedRoute><ColumnDetailPage /></ProtectedRoute>} />
+            <Route path="/questions" element={<ProtectedRoute><QuestionsPage /></ProtectedRoute>} />
+            <Route path="/questions/:id" element={<ProtectedRoute><QuestionDetailPage /></ProtectedRoute>} />
             <Route path="/admin/columns" element={<ProtectedRoute><AdminColumnsPage /></ProtectedRoute>} />
+            <Route path="/admin/questions" element={<ProtectedRoute><AdminQuestionsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
