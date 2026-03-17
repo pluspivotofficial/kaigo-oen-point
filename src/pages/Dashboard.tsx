@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings } from "lucide-react";
+import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings, Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -316,6 +316,16 @@ const Dashboard = () => {
           <div>
             <p className="font-semibold text-sm">友人を紹介する</p>
             <p className="text-xs text-muted-foreground">紹介で15,000ポイントもらえる！</p>
+          </div>
+        </Button>
+
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/ranking")}>
+          <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center">
+            <Trophy className="h-5 w-5 text-secondary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">都道府県ランキング</p>
+            <p className="text-xs text-muted-foreground">地域別の累計稼働時間を確認</p>
           </div>
         </Button>
 
