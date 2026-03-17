@@ -148,6 +148,80 @@ export type Database = {
         }
         Relationships: []
       }
+      question_answers: {
+        Row: {
+          anonymous_name: string
+          body: string
+          created_at: string
+          id: string
+          question_id: string
+          user_id: string
+        }
+        Insert: {
+          anonymous_name?: string
+          body: string
+          created_at?: string
+          id?: string
+          question_id: string
+          user_id: string
+        }
+        Update: {
+          anonymous_name?: string
+          body?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          anonymous_name: string
+          answer_count: number
+          approved_at: string | null
+          body: string
+          created_at: string
+          id: string
+          is_approved: boolean
+          is_rejected: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          anonymous_name?: string
+          answer_count?: number
+          approved_at?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          is_rejected?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          anonymous_name?: string
+          answer_count?: number
+          approved_at?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean
+          is_rejected?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           created_at: string
