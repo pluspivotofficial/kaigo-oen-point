@@ -319,6 +319,16 @@ const Dashboard = () => {
           </div>
         </Button>
 
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/ranking")}>
+          <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center">
+            <Trophy className="h-5 w-5 text-secondary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">都道府県ランキング</p>
+            <p className="text-xs text-muted-foreground">地域別の累計稼働時間を確認</p>
+          </div>
+        </Button>
+
         <a href="https://hop-kaigo.jp/register/seeker" target="_blank" rel="noopener noreferrer" className="block">
           <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 text-left whitespace-normal">
             <div className="h-9 w-9 rounded-lg bg-reward-gold/10 flex items-center justify-center flex-shrink-0">
