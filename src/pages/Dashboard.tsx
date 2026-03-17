@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings, Trophy } from "lucide-react";
+import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings, Trophy, CalendarCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,16 @@ const MOCK_NOTICES = [
   },
   {
     id: 3,
+    type: "event" as const,
+    title: "【4/12開催】介護職交流会 in 渋谷",
+    description: "他施設のスタッフと情報交換できる交流イベント！軽食付き・参加無料。定員30名。",
+    icon: CalendarCheck,
+    color: "bg-primary/10 text-primary",
+    badge: "イベント",
+    badgeVariant: "default" as const,
+  },
+  {
+    id: 4,
     type: "new" as const,
     title: "ポイント還元サイトがリニューアル",
     description: "より使いやすくなりました。新しいサイトをチェック！",
