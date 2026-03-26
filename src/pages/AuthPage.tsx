@@ -80,10 +80,10 @@ const AuthPage = () => {
 
       if (!referral) return; // Invalid or already used code
 
-      // Update referral status
+      // Update referral status and store referred user id
       await supabase
         .from("referrals")
-        .update({ status: "registered" })
+        .update({ status: "registered", referred_user_id: newUserId } as any)
         .eq("id", referral.id);
 
       // Award 500 points to referrer

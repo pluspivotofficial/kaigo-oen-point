@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Gift, Copy, Check, Share2, Link2 } from "lucide-react";
+import { Users, Gift, Copy, Check, Share2, Link2, Coins } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ const ReferralPage = () => {
   const [friendContact, setFriendContact] = useState("");
   const [referralCount, setReferralCount] = useState(0);
   const [referrals, setReferrals] = useState<any[]>([]);
+  const [referralPoints, setReferralPoints] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -40,9 +41,23 @@ const ReferralPage = () => {
         if (data) {
           setReferrals(data);
           setReferralCount(data.length);
+          // Fetch points for referred users
+          fetchReferralPoints();
         }
       });
   }, [user]);
+
+  const fetchReferralPoints = async () => {
+    if (!user) return;
+    const { data } = await supabase.rpc("get_referral_user_points", { _referrer_id: user.id });
+    if (data) {
+      const map: Record<string, number> = {};
+      (data as any[]).forEach((row: any) => {
+        map[row.referral_id] = Number(row.total_points);
+      });
+      setReferralPoints(map);
+    }
+  };
 
   const handleCopyLink = (referral: any) => {
     const link = `${window.location.origin}/auth?ref=${referral.referral_code}`;
@@ -74,7 +89,6 @@ const ReferralPage = () => {
       return;
     }
 
-    // Copy link automatically
     const link = `${window.location.origin}/auth?ref=${referralCode}`;
     navigator.clipboard.writeText(link);
 
@@ -92,11 +106,11 @@ const ReferralPage = () => {
   return (
     <AppLayout title="友人紹介">
       {/* Reward Banner */}
-      <Card className="bg-gradient-to-br from-reward-purple to-reward-purple/80 border-0 mb-6">
+      <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6">
         <CardContent className="p-6 text-center">
-          <Gift className="h-10 w-10 text-white mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-white mb-1">最大 15,500 ポイント！</h2>
-          <p className="text-white/70 text-sm">登録で500pt + 稼働開始で15,000pt</p>
+          <Gift className="h-10 w-10 text-primary-foreground mx-auto mb-3" />
+          <h2 className="text-xl font-bold text-primary-foreground mb-1">最大 15,500 ポイント！</h2>
+          <p className="text-primary-foreground/70 text-sm">登録で500pt + 稼働開始で15,000pt</p>
         </CardContent>
       </Card>
 
@@ -155,6 +169,7 @@ const ReferralPage = () => {
           <CardContent className="space-y-3">
             {referrals.map((r) => {
               const status = STATUS_MAP[r.status] || STATUS_MAP.pending;
+              const pts = referralPoints[r.id];
               return (
                 <div key={r.id} className="p-3 rounded-lg bg-muted space-y-2">
                   <div className="flex items-center justify-between">
@@ -166,6 +181,13 @@ const ReferralPage = () => {
                       {status.label}
                     </Badge>
                   </div>
+                  {/* Show referred user's points if registered */}
+                  {r.status !== "pending" && pts !== undefined && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Coins className="h-3 w-3" />
+                      <span>紹介先の現在ポイント: <strong className="text-foreground">{pts.toLocaleString()}pt</strong></span>
+                    </div>
+                  )}
                   {r.referral_code && r.status === "pending" && (
                     <Button
                       variant="outline"
