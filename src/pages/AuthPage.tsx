@@ -18,12 +18,11 @@ const AuthPage = () => {
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Pre-fill referral code from URL
   useEffect(() => {
     const ref = searchParams.get("ref");
     if (ref) {
       setReferralCode(ref);
-      setIsLogin(false); // Switch to signup mode
+      setIsLogin(false);
     }
   }, [searchParams]);
 
@@ -47,9 +46,8 @@ const AuthPage = () => {
         });
         if (error) throw error;
 
-        // If referral code provided, try to process it
         if (referralCode && signUpData.user) {
-          await processReferralCode(referralCode, signUpData.user.id);
+          await processReferralCode(referralCode, signUpData.user.id, displayName);
         }
 
         toast({
@@ -68,9 +66,8 @@ const AuthPage = () => {
     }
   };
 
-  const processReferralCode = async (code: string, newUserId: string) => {
+  const processReferralCode = async (code: string, newUserId: string, userName: string) => {
     try {
-      // Look up referral by code
       const { data: referral } = await supabase
         .from("referrals")
         .select("*")
@@ -78,21 +75,44 @@ const AuthPage = () => {
         .eq("status", "pending")
         .single();
 
-      if (!referral) return; // Invalid or already used code
+      if (!referral) return;
 
-      // Update referral status and store referred user id
+      // Update referral with referred user info and name
       await supabase
         .from("referrals")
-        .update({ status: "registered", referred_user_id: newUserId } as any)
+        .update({
+          status: "completed_registered",
+          referred_user_id: newUserId,
+          friend_name: userName || email,
+          points_awarded: true,
+        } as any)
         .eq("id", referral.id);
 
-      // Award 500 points to referrer
+      // Award 500pt to referrer (1st level)
       await supabase.from("points_history").insert({
         user_id: referral.referrer_id,
-        description: `紹介ボーナス（${referral.friend_name}さん登録）`,
+        description: `紹介ボーナス（${userName || "新規ユーザー"}さん登録）`,
         points: 500,
         type: "earn",
       });
+
+      // Check if referrer was also referred by someone (2nd level / grandparent)
+      const { data: parentReferral } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referred_user_id", referral.referrer_id)
+        .limit(1)
+        .maybeSingle();
+
+      if (parentReferral) {
+        // Award 100pt to grandparent referrer
+        await supabase.from("points_history").insert({
+          user_id: parentReferral.referrer_id,
+          description: `2次紹介ボーナス（${userName || "新規ユーザー"}さん登録）`,
+          points: 100,
+          type: "earn",
+        });
+      }
     } catch (err) {
       console.error("Referral processing error:", err);
     }
@@ -101,7 +121,6 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-5 py-8">
       <div className="w-full max-w-sm">
-        {/* Logo and Title */}
         <div className="text-center mb-6">
           <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-4">
             <Coins className="h-8 w-8 text-primary-foreground" />
@@ -110,11 +129,10 @@ const AuthPage = () => {
           <p className="text-sm text-muted-foreground mt-1">介護派遣ポイ活アプリ</p>
         </div>
 
-        {/* Referral Code Banner (when coming from invite link) */}
         {referralCode && !isLogin && (
-          <Card className="mb-4 border-reward-purple/30 bg-reward-purple/5">
+          <Card className="mb-4 border-primary/30 bg-primary/5">
             <CardContent className="p-4 flex items-center gap-3">
-              <Ticket className="h-5 w-5 text-reward-purple shrink-0" />
+              <Ticket className="h-5 w-5 text-primary shrink-0" />
               <div>
                 <p className="font-semibold text-sm">招待コードが適用されています</p>
                 <p className="text-xs text-muted-foreground">登録完了で紹介者に500ポイントが付与されます</p>
@@ -123,7 +141,6 @@ const AuthPage = () => {
           </Card>
         )}
 
-        {/* Point Benefits Card */}
         <Card className="mb-4 border-primary/20 bg-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -132,8 +149,8 @@ const AuthPage = () => {
             </div>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded-full bg-reward-gold/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-reward-gold">1</span>
+                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-primary">1</span>
                 </div>
                 <div className="text-sm">
                   <p className="font-medium">シフト申請でポイントGET</p>
@@ -141,8 +158,8 @@ const AuthPage = () => {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded-full bg-reward-gold/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-reward-gold">2</span>
+                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-primary">2</span>
                 </div>
                 <div className="text-sm">
                   <p className="font-medium">勤務でさらにポイントUP</p>
@@ -150,8 +167,8 @@ const AuthPage = () => {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="h-6 w-6 rounded-full bg-reward-gold/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-xs font-bold text-reward-gold">3</span>
+                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-primary">3</span>
                 </div>
                 <div className="text-sm">
                   <p className="font-medium">都道府県チャレンジ 🏆</p>
@@ -162,7 +179,6 @@ const AuthPage = () => {
           </CardContent>
         </Card>
 
-        {/* Auth Form Card */}
         <Card>
           <CardHeader className="pb-4">
             <CardTitle className="text-base text-center">
@@ -242,7 +258,6 @@ const AuthPage = () => {
           </CardContent>
         </Card>
 
-        {/* Point Activation Note */}
         <Card className="mt-4 border-secondary/20 bg-secondary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
