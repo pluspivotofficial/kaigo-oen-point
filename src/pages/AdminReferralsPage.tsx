@@ -139,6 +139,19 @@ const AdminReferralsPage = () => {
                   </Button>
                 </div>
               )}
+              {r.status === "completed_registered" && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="text-xs gap-1"
+                    disabled={processing === r.id}
+                    onClick={() => handleApproveActive(r)}
+                  >
+                    <Play className="h-3 w-3" />
+                    稼働承認（+15,000pt）
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </CardContent>
