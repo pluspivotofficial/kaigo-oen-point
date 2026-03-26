@@ -294,8 +294,8 @@ export type Database = {
       referrals: {
         Row: {
           created_at: string
-          friend_contact: string
-          friend_name: string
+          friend_contact: string | null
+          friend_name: string | null
           id: string
           points_awarded: boolean
           referral_code: string | null
@@ -305,8 +305,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          friend_contact: string
-          friend_name: string
+          friend_contact?: string | null
+          friend_name?: string | null
           id?: string
           points_awarded?: boolean
           referral_code?: string | null
@@ -316,8 +316,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          friend_contact?: string
-          friend_name?: string
+          friend_contact?: string | null
+          friend_name?: string | null
           id?: string
           points_awarded?: boolean
           referral_code?: string | null
