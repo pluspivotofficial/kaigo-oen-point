@@ -173,6 +173,7 @@ export type Database = {
           care_experience: string | null
           care_qualifications: string | null
           created_at: string
+          date_of_birth: string | null
           display_name: string | null
           facility_name: string | null
           first_launch_date: string
@@ -188,6 +189,7 @@ export type Database = {
           care_experience?: string | null
           care_qualifications?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           facility_name?: string | null
           first_launch_date?: string
@@ -203,6 +205,7 @@ export type Database = {
           care_experience?: string | null
           care_qualifications?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string | null
           facility_name?: string | null
           first_launch_date?: string
