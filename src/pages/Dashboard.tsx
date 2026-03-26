@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings, Trophy, CalendarCheck } from "lucide-react";
+import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings, Trophy, CalendarCheck, Flame } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { PREFECTURES } from "@/lib/prefectures";
 import { toast } from "@/hooks/use-toast";
+import { useLoginBonus } from "@/hooks/useLoginBonus";
 
 interface ColumnPreview {
   id: string;
@@ -83,6 +84,7 @@ const Dashboard = () => {
   const [savingPrefecture, setSavingPrefecture] = useState(false);
   const [columns, setColumns] = useState<ColumnPreview[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { streak } = useLoginBonus(user?.id);
   useEffect(() => {
     if (!user) return;
 
@@ -199,27 +201,32 @@ const Dashboard = () => {
       </Card>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-3 gap-3 mb-6">
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
-              <TrendingUp className="h-5 w-5 text-accent-foreground" />
+          <CardContent className="p-3 flex flex-col items-center">
+            <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center mb-1">
+              <TrendingUp className="h-4 w-4 text-accent-foreground" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">今月獲得</p>
-              <p className="text-lg font-bold text-foreground">{monthlyPoints} pt</p>
-            </div>
+            <p className="text-[10px] text-muted-foreground">今月獲得</p>
+            <p className="text-lg font-bold text-foreground">{monthlyPoints} pt</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
-              <Clock className="h-5 w-5 text-accent-foreground" />
+          <CardContent className="p-3 flex flex-col items-center">
+            <div className="h-9 w-9 rounded-lg bg-accent flex items-center justify-center mb-1">
+              <Clock className="h-4 w-4 text-accent-foreground" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">今月勤務</p>
-              <p className="text-lg font-bold text-foreground">{monthlyShifts} 回</p>
+            <p className="text-[10px] text-muted-foreground">今月勤務</p>
+            <p className="text-lg font-bold text-foreground">{monthlyShifts} 回</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 flex flex-col items-center">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center mb-1">
+              <Flame className="h-4 w-4 text-primary" />
             </div>
+            <p className="text-[10px] text-muted-foreground">連続ログイン</p>
+            <p className="text-lg font-bold text-foreground">{streak} 日</p>
           </CardContent>
         </Card>
       </div>
@@ -325,7 +332,7 @@ const Dashboard = () => {
           </div>
           <div>
             <p className="font-semibold text-sm">友人を紹介する</p>
-            <p className="text-xs text-muted-foreground">紹介で15,000ポイントもらえる！</p>
+            <p className="text-xs text-muted-foreground">登録で500pt＋稼働開始で15,000pt</p>
           </div>
         </Button>
 
