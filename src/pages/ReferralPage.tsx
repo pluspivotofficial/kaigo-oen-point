@@ -181,8 +181,7 @@ const ReferralPage = () => {
                       {status.label}
                     </Badge>
                   </div>
-                  {/* Show referred user's points if registered */}
-                  {r.status !== "pending" && pts !== undefined && (
+                  {pts !== undefined && pts > 0 && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Coins className="h-3 w-3" />
                       <span>紹介先の現在ポイント: <strong className="text-foreground">{pts.toLocaleString()}pt</strong></span>
