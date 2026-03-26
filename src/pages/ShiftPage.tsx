@@ -94,7 +94,10 @@ const ShiftPage = () => {
       return;
     }
 
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(selectedDate.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
     setSubmitting(true);
     const defaults = SHIFT_DEFAULTS[selectedShift];
 
