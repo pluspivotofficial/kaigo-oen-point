@@ -380,6 +380,15 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground">質問の承認・却下</p>
               </div>
             </Button>
+            <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/referrals")}>
+              <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
+                <Users className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">紹介管理</p>
+                <p className="text-xs text-muted-foreground">紹介ステータスとポイント付与</p>
+              </div>
+            </Button>
           </>
         )}
 
