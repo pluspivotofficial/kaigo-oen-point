@@ -1,0 +1,2 @@
+ALTER TABLE public.referrals DROP CONSTRAINT referrals_status_check;
+ALTER TABLE public.referrals ADD CONSTRAINT referrals_status_check CHECK (status = ANY (ARRAY['pending'::text, 'registered'::text, 'completed'::text, 'completed_registered'::text, 'completed_active'::text]));
