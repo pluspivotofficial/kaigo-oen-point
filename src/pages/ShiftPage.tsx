@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { Sun, Sunset, Moon, Check, Pencil, Building2, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { getRandomPraise } from "@/lib/shiftMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 
@@ -161,8 +162,8 @@ const ShiftPage = () => {
 
       setSubmittedShifts((prev) => [...prev, shiftData as ShiftRow]);
       toast({
-        title: "シフトを申請しました！",
-        description: `${selectedDate.toLocaleDateString("ja-JP")} ${defaults.label} ${startTime}〜${endTime}（${hours}ポイント獲得予定）`,
+        title: getRandomPraise(),
+        description: `${selectedDate.toLocaleDateString("ja-JP")} ${defaults.label} ${startTime}〜${endTime}（+${hours}ポイント）`,
       });
     }
 
