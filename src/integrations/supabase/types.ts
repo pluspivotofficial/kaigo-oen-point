@@ -393,6 +393,13 @@ export type Database = {
       }
     }
     Functions: {
+      get_referral_user_points: {
+        Args: { referral_codes: string[] }
+        Returns: {
+          referral_code: string
+          total_points: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
