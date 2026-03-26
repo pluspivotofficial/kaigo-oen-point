@@ -157,7 +157,7 @@ const AdminReferralsPage = () => {
                 </div>
                 {statusBadge(r.status)}
               </div>
-              {r.status === "pending" && r.referred_user_id && (
+              {r.status === "pending" && (
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -168,15 +168,6 @@ const AdminReferralsPage = () => {
                   >
                     <CheckCircle className="h-3 w-3" />
                     登録承認（+500pt）
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="text-xs gap-1"
-                    disabled={processing === r.id}
-                    onClick={() => handleApproveActive(r)}
-                  >
-                    <Play className="h-3 w-3" />
-                    稼働承認（+15,000pt）
                   </Button>
                 </div>
               )}
@@ -189,7 +180,7 @@ const AdminReferralsPage = () => {
                     onClick={() => handleApproveActive(r)}
                   >
                     <Play className="h-3 w-3" />
-                    稼働承認（+15,000pt）
+                    稼働承認（+10,000pt）
                   </Button>
                 </div>
               )}
