@@ -16,6 +16,7 @@ import ColumnDetailPage from "./pages/ColumnDetailPage";
 import QuestionsPage from "./pages/QuestionsPage";
 import QuestionDetailPage from "./pages/QuestionDetailPage";
 import AdminQuestionsPage from "./pages/AdminQuestionsPage";
+import AdminReferralsPage from "./pages/AdminReferralsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/questions/:id" element={<ProtectedRoute><QuestionDetailPage /></ProtectedRoute>} />
             <Route path="/admin/columns" element={<ProtectedRoute><AdminColumnsPage /></ProtectedRoute>} />
             <Route path="/admin/questions" element={<ProtectedRoute><AdminQuestionsPage /></ProtectedRoute>} />
+            <Route path="/admin/referrals" element={<ProtectedRoute><AdminReferralsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

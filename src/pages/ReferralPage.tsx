@@ -10,16 +10,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 
+const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
+  pending: { label: "申請中", variant: "secondary" },
+  registered: { label: "登録済み（+500pt）", variant: "outline" },
+  active: { label: "稼働開始（+15,000pt）", variant: "default" },
+};
+
 const ReferralPage = () => {
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [friendName, setFriendName] = useState("");
   const [friendContact, setFriendContact] = useState("");
   const [referralCount, setReferralCount] = useState(0);
-  const [referrals, setReferrals] = useState<{ id: string; friend_name: string; status: string; created_at: string }[]>([]);
+  const [referrals, setReferrals] = useState<{ id: string; friend_name: string; status: string; created_at: string; points_awarded: boolean }[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  // Generate a deterministic referral code from user id
   const referralCode = user ? `HOP-${user.id.slice(0, 6).toUpperCase()}` : "";
 
   useEffect(() => {
@@ -68,7 +73,7 @@ const ReferralPage = () => {
     setReferralCount((c) => c + 1);
     toast({
       title: "紹介を送信しました！",
-      description: `${friendName}さんが登録すると15,000ポイントが付与されます`,
+      description: `${friendName}さんが登録すると500ポイント、稼働開始で15,000ポイントが付与されます`,
     });
     setFriendName("");
     setFriendContact("");
@@ -81,8 +86,28 @@ const ReferralPage = () => {
       <Card className="bg-gradient-to-br from-reward-purple to-reward-purple/80 border-0 mb-6">
         <CardContent className="p-6 text-center">
           <Gift className="h-10 w-10 text-white mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-white mb-1">15,000 ポイントもらえる！</h2>
-          <p className="text-white/70 text-sm">友人を紹介して、お友達が登録するとポイントが付与されます</p>
+          <h2 className="text-xl font-bold text-white mb-1">最大 15,500 ポイント！</h2>
+          <p className="text-white/70 text-sm">登録で500pt + 稼働開始で15,000pt</p>
+        </CardContent>
+      </Card>
+
+      {/* 2-step explanation */}
+      <Card className="mb-5">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+            <div>
+              <p className="font-semibold text-sm">登録完了で <span className="text-primary">+500pt</span></p>
+              <p className="text-xs text-muted-foreground">紹介した友人が会員登録を完了した時点で自動付与</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+            <div>
+              <p className="font-semibold text-sm">稼働開始で <span className="text-primary">+15,000pt</span></p>
+              <p className="text-xs text-muted-foreground">友人が初回勤務を開始した時点で管理者が付与</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -139,43 +164,23 @@ const ReferralPage = () => {
             <CardTitle className="text-base">紹介履歴</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {referrals.map((r) => (
-              <div key={r.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                <div>
-                  <p className="text-sm font-medium">{r.friend_name}</p>
-                  <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("ja-JP")}</p>
+            {referrals.map((r) => {
+              const status = STATUS_MAP[r.status] || STATUS_MAP.pending;
+              return (
+                <div key={r.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                  <div>
+                    <p className="text-sm font-medium">{r.friend_name}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("ja-JP")}</p>
+                  </div>
+                  <Badge variant={status.variant} className="text-xs">
+                    {status.label}
+                  </Badge>
                 </div>
-                <Badge variant={r.status === "completed" ? "default" : "secondary"} className="text-xs">
-                  {r.status === "pending" ? "申請中" : r.status === "registered" ? "登録済み" : "完了"}
-                </Badge>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
-
-      {/* How It Works */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">紹介の仕組み</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="space-y-3">
-            {[
-              "紹介コードを友人にシェア",
-              "友人が介護派遣に登録",
-              "友人の初回勤務完了後、15,000ポイント付与！",
-            ].map((step, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                  {i + 1}
-                </span>
-                <span className="text-sm text-foreground">{step}</span>
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
     </AppLayout>
   );
 };
