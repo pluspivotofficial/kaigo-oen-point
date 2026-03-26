@@ -1,20 +1,31 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Coins, LogIn, UserPlus, Gift, Clock, ExternalLink } from "lucide-react";
+import { Coins, LogIn, UserPlus, Gift, Clock, ExternalLink, Ticket } from "lucide-react";
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill referral code from URL
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      setReferralCode(ref);
+      setIsLogin(false); // Switch to signup mode
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,15 +37,21 @@ const AuthPage = () => {
         if (error) throw error;
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { display_name: displayName },
+            data: { display_name: displayName, referral_code: referralCode || undefined },
             emailRedirectTo: window.location.origin,
           },
         });
         if (error) throw error;
+
+        // If referral code provided, try to process it
+        if (referralCode && signUpData.user) {
+          await processReferralCode(referralCode, signUpData.user.id);
+        }
+
         toast({
           title: "アカウントを作成しました！",
           description: "確認メールをご確認ください。",
@@ -51,6 +68,36 @@ const AuthPage = () => {
     }
   };
 
+  const processReferralCode = async (code: string, newUserId: string) => {
+    try {
+      // Look up referral by code
+      const { data: referral } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referral_code", code)
+        .eq("status", "pending")
+        .single();
+
+      if (!referral) return; // Invalid or already used code
+
+      // Update referral status
+      await supabase
+        .from("referrals")
+        .update({ status: "registered" })
+        .eq("id", referral.id);
+
+      // Award 500 points to referrer
+      await supabase.from("points_history").insert({
+        user_id: referral.referrer_id,
+        description: `紹介ボーナス（${referral.friend_name}さん登録）`,
+        points: 500,
+        type: "earn",
+      });
+    } catch (err) {
+      console.error("Referral processing error:", err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-5 py-8">
       <div className="w-full max-w-sm">
@@ -62,6 +109,19 @@ const AuthPage = () => {
           <h1 className="text-2xl font-bold text-foreground">ホップポイント</h1>
           <p className="text-sm text-muted-foreground mt-1">介護派遣ポイ活アプリ</p>
         </div>
+
+        {/* Referral Code Banner (when coming from invite link) */}
+        {referralCode && !isLogin && (
+          <Card className="mb-4 border-reward-purple/30 bg-reward-purple/5">
+            <CardContent className="p-4 flex items-center gap-3">
+              <Ticket className="h-5 w-5 text-reward-purple shrink-0" />
+              <div>
+                <p className="font-semibold text-sm">招待コードが適用されています</p>
+                <p className="text-xs text-muted-foreground">登録完了で紹介者に500ポイントが付与されます</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Point Benefits Card */}
         <Card className="mb-4 border-primary/20 bg-primary/5">
@@ -112,16 +172,32 @@ const AuthPage = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">お名前</Label>
-                  <Input
-                    id="displayName"
-                    placeholder="山田 太郎"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required={!isLogin}
-                  />
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="displayName">お名前</Label>
+                    <Input
+                      id="displayName"
+                      placeholder="山田 太郎"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      required={!isLogin}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="referralCode" className="flex items-center gap-1.5">
+                      <Ticket className="h-3.5 w-3.5" />
+                      紹介コード（任意）
+                    </Label>
+                    <Input
+                      id="referralCode"
+                      placeholder="HOP-XXXXXX"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      className="font-mono"
+                    />
+                    <p className="text-[10px] text-muted-foreground">紹介コードをお持ちの方は入力してください</p>
+                  </div>
+                </>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email">メールアドレス</Label>
