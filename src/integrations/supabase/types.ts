@@ -299,6 +299,7 @@ export type Database = {
           id: string
           points_awarded: boolean
           referral_code: string | null
+          referred_user_id: string | null
           referrer_id: string
           status: string
         }
@@ -309,6 +310,7 @@ export type Database = {
           id?: string
           points_awarded?: boolean
           referral_code?: string | null
+          referred_user_id?: string | null
           referrer_id: string
           status?: string
         }
@@ -319,6 +321,7 @@ export type Database = {
           id?: string
           points_awarded?: boolean
           referral_code?: string | null
+          referred_user_id?: string | null
           referrer_id?: string
           status?: string
         }
@@ -394,9 +397,9 @@ export type Database = {
     }
     Functions: {
       get_referral_user_points: {
-        Args: { referral_codes: string[] }
+        Args: { _referrer_id: string }
         Returns: {
-          referral_code: string
+          referral_id: string
           total_points: number
         }[]
       }
