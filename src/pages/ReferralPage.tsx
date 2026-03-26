@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { Users, Gift, Copy, Check, Share2, Link2, Coins } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,8 +20,6 @@ function generateCode() {
 
 const ReferralPage = () => {
   const { user } = useAuth();
-  const [friendName, setFriendName] = useState("");
-  const [friendContact, setFriendContact] = useState("");
   const [referralCount, setReferralCount] = useState(0);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [referralPoints, setReferralPoints] = useState<Record<string, number>>({});
@@ -41,7 +37,6 @@ const ReferralPage = () => {
         if (data) {
           setReferrals(data);
           setReferralCount(data.length);
-          // Fetch points for referred users
           fetchReferralPoints();
         }
       });
@@ -67,19 +62,14 @@ const ReferralPage = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleSubmitReferral = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!friendName || !friendContact || !user) {
-      toast({ title: "お名前と連絡先を入力してください", variant: "destructive" });
-      return;
-    }
-
+  const handleCreateLink = async () => {
+    if (!user) return;
     setSubmitting(true);
     const referralCode = `HOP-${generateCode()}`;
     const { data, error } = await supabase.from("referrals").insert({
       referrer_id: user.id,
-      friend_name: friendName,
-      friend_contact: friendContact,
+      friend_name: "",
+      friend_contact: "",
       referral_code: referralCode,
     }).select().single();
 
@@ -95,11 +85,9 @@ const ReferralPage = () => {
     setReferrals((prev) => [data, ...prev]);
     setReferralCount((c) => c + 1);
     toast({
-      title: "紹介リンクを作成しました！",
-      description: "招待リンクがクリップボードにコピーされました。LINEなどで共有してください。",
+      title: "招待リンクを作成しました！",
+      description: "クリップボードにコピーされました。LINEなどで共有してください。",
     });
-    setFriendName("");
-    setFriendContact("");
     setSubmitting(false);
   };
 
@@ -121,7 +109,7 @@ const ReferralPage = () => {
             <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
             <div>
               <p className="font-semibold text-sm">登録完了で <span className="text-primary">+500pt</span></p>
-              <p className="text-xs text-muted-foreground">紹介した友人が招待リンクから登録完了した時点で自動付与</p>
+              <p className="text-xs text-muted-foreground">紹介した友人が招待リンクから登録完了した時点で付与</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -131,32 +119,32 @@ const ReferralPage = () => {
               <p className="text-xs text-muted-foreground">友人が初回勤務を開始した時点で管理者が付与</p>
             </div>
           </div>
+          <div className="flex items-start gap-3">
+            <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">★</span>
+            <div>
+              <p className="font-semibold text-sm">紹介先にもポイント付与！</p>
+              <p className="text-xs text-muted-foreground">登録した友人にも稼働開始で10,000pt付与されます</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Referral Form */}
+      {/* Create Link Button */}
       <Card className="mb-5">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Share2 className="h-4 w-4" />
-            友人を紹介する
+            招待リンクを作成
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmitReferral} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="friendName">お友達のお名前</Label>
-              <Input id="friendName" placeholder="山田 太郎" value={friendName} onChange={(e) => setFriendName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="friendContact">メールアドレスまたは電話番号</Label>
-              <Input id="friendContact" placeholder="taro@example.com" value={friendContact} onChange={(e) => setFriendContact(e.target.value)} />
-            </div>
-            <Button type="submit" className="w-full gap-2" size="lg" disabled={submitting}>
-              <Link2 className="h-4 w-4" />
-              {submitting ? "作成中..." : "招待リンクを作成する"}
-            </Button>
-          </form>
+          <p className="text-xs text-muted-foreground mb-3">
+            ボタンを押すと招待リンクが作成され、クリップボードにコピーされます。LINEやメッセージで共有してください。
+          </p>
+          <Button className="w-full gap-2" size="lg" disabled={submitting} onClick={handleCreateLink}>
+            <Link2 className="h-4 w-4" />
+            {submitting ? "作成中..." : "招待リンクを作成してコピー"}
+          </Button>
         </CardContent>
       </Card>
 
@@ -170,11 +158,12 @@ const ReferralPage = () => {
             {referrals.map((r) => {
               const status = STATUS_MAP[r.status] || STATUS_MAP.pending;
               const pts = referralPoints[r.id];
+              const displayName = r.friend_name || "未登録";
               return (
                 <div key={r.id} className="p-3 rounded-lg bg-muted space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">{r.friend_name}</p>
+                      <p className="text-sm font-medium">{displayName}</p>
                       <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("ja-JP")}</p>
                     </div>
                     <Badge variant={status.variant} className="text-xs">
@@ -187,7 +176,7 @@ const ReferralPage = () => {
                       <span>紹介先の現在ポイント: <strong className="text-foreground">{pts.toLocaleString()}pt</strong></span>
                     </div>
                   )}
-                  {r.referral_code && r.status === "pending" && (
+                  {r.referral_code && r.status === "pending" && !r.referred_user_id && (
                     <Button
                       variant="outline"
                       size="sm"

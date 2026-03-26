@@ -13,6 +13,7 @@ interface Referral {
   referrer_id: string;
   friend_name: string;
   friend_contact: string;
+  referred_user_id: string | null;
   status: string;
   points_awarded: boolean;
   created_at: string;
@@ -49,15 +50,19 @@ const AdminReferralsPage = () => {
       return;
     }
 
+    // Award 500pt to referrer
     await supabase.from("points_history").insert({
       user_id: referral.referrer_id,
-      description: `紹介ボーナス（${referral.friend_name}さん登録）`,
+      description: `紹介ボーナス（${referral.friend_name || "紹介ユーザー"}さん登録）`,
       points: 500,
       type: "earn",
     });
 
+    // Check for grandparent referrer (2nd level)
+    await awardGrandparentBonus(referral.referrer_id, referral.friend_name || "紹介ユーザー", "登録");
+
     setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "completed_registered", points_awarded: true } : r));
-    toast({ title: `${referral.friend_name}さんを承認し、500ptを付与しました` });
+    toast({ title: `${referral.friend_name || "紹介ユーザー"}さんを承認し、500ptを付与しました` });
     setProcessing(null);
   };
 
@@ -74,16 +79,52 @@ const AdminReferralsPage = () => {
       return;
     }
 
+    // Award 15,000pt to referrer
     await supabase.from("points_history").insert({
       user_id: referral.referrer_id,
-      description: `紹介ボーナス（${referral.friend_name}さん稼働開始）`,
+      description: `紹介ボーナス（${referral.friend_name || "紹介ユーザー"}さん稼働開始）`,
       points: 15000,
       type: "earn",
     });
 
+    // Award 10,000pt to the referred user
+    if (referral.referred_user_id) {
+      await supabase.from("points_history").insert({
+        user_id: referral.referred_user_id,
+        description: `稼働開始ボーナス（紹介経由）`,
+        points: 10000,
+        type: "earn",
+      });
+    }
+
+    // Check for grandparent referrer (2nd level)
+    await awardGrandparentBonus(referral.referrer_id, referral.friend_name || "紹介ユーザー", "稼働開始");
+
     setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "completed_active", points_awarded: true } : r));
-    toast({ title: `${referral.friend_name}さんを承認し、15,000ptを付与しました` });
+    toast({ title: `${referral.friend_name || "紹介ユーザー"}さんを承認し、ポイントを付与しました` });
     setProcessing(null);
+  };
+
+  const awardGrandparentBonus = async (referrerId: string, friendName: string, action: string) => {
+    try {
+      const { data: parentReferral } = await supabase
+        .from("referrals")
+        .select("referrer_id")
+        .eq("referred_user_id", referrerId)
+        .limit(1)
+        .maybeSingle();
+
+      if (parentReferral) {
+        await supabase.from("points_history").insert({
+          user_id: parentReferral.referrer_id,
+          description: `2次紹介ボーナス（${friendName}さん${action}）`,
+          points: 100,
+          type: "earn",
+        });
+      }
+    } catch (err) {
+      console.error("Grandparent bonus error:", err);
+    }
   };
 
   const statusBadge = (status: string) => {
@@ -110,13 +151,13 @@ const AdminReferralsPage = () => {
             <div key={r.id} className="p-3 rounded-lg bg-muted space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">{r.friend_name}</p>
-                  <p className="text-xs text-muted-foreground">{r.friend_contact}</p>
+                  <p className="text-sm font-medium">{r.friend_name || "未登録"}</p>
+                  {r.friend_contact && <p className="text-xs text-muted-foreground">{r.friend_contact}</p>}
                   <p className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString("ja-JP")}</p>
                 </div>
                 {statusBadge(r.status)}
               </div>
-              {r.status === "pending" && (
+              {r.status === "pending" && r.referred_user_id && (
                 <div className="flex gap-2">
                   <Button
                     size="sm"
