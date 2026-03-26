@@ -36,12 +36,11 @@ const AdminReferralsPage = () => {
       });
   }, [user]);
 
-  const handleMarkRegistered = async (referral: Referral) => {
+  const handleApproveRegistered = async (referral: Referral) => {
     setProcessing(referral.id);
-    // Update status to registered
     const { error } = await supabase
       .from("referrals")
-      .update({ status: "registered" })
+      .update({ status: "completed_registered", points_awarded: true })
       .eq("id", referral.id);
 
     if (error) {
@@ -50,7 +49,6 @@ const AdminReferralsPage = () => {
       return;
     }
 
-    // Award 500 points to referrer
     await supabase.from("points_history").insert({
       user_id: referral.referrer_id,
       description: `紹介ボーナス（${referral.friend_name}さん登録）`,
@@ -58,16 +56,16 @@ const AdminReferralsPage = () => {
       type: "earn",
     });
 
-    setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "registered" } : r));
-    toast({ title: `${referral.friend_name}さんを登録済みにし、500ptを付与しました` });
+    setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "completed_registered", points_awarded: true } : r));
+    toast({ title: `${referral.friend_name}さんを承認し、500ptを付与しました` });
     setProcessing(null);
   };
 
-  const handleMarkActive = async (referral: Referral) => {
+  const handleApproveActive = async (referral: Referral) => {
     setProcessing(referral.id);
     const { error } = await supabase
       .from("referrals")
-      .update({ status: "active", points_awarded: true })
+      .update({ status: "completed_active", points_awarded: true })
       .eq("id", referral.id);
 
     if (error) {
@@ -76,7 +74,6 @@ const AdminReferralsPage = () => {
       return;
     }
 
-    // Award 15000 points to referrer
     await supabase.from("points_history").insert({
       user_id: referral.referrer_id,
       description: `紹介ボーナス（${referral.friend_name}さん稼働開始）`,
@@ -84,15 +81,15 @@ const AdminReferralsPage = () => {
       type: "earn",
     });
 
-    setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "active", points_awarded: true } : r));
-    toast({ title: `${referral.friend_name}さんを稼働開始にし、15,000ptを付与しました` });
+    setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "completed_active", points_awarded: true } : r));
+    toast({ title: `${referral.friend_name}さんを承認し、15,000ptを付与しました` });
     setProcessing(null);
   };
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case "registered": return <Badge variant="outline" className="text-xs">登録済み</Badge>;
-      case "active": return <Badge variant="default" className="text-xs">稼働開始</Badge>;
+      case "completed_registered": return <Badge variant="outline" className="text-xs">承認済み（登録）</Badge>;
+      case "completed_active": return <Badge variant="default" className="text-xs">承認済み（稼働）</Badge>;
       default: return <Badge variant="secondary" className="text-xs">申請中</Badge>;
     }
   };
@@ -119,31 +116,29 @@ const AdminReferralsPage = () => {
                 </div>
                 {statusBadge(r.status)}
               </div>
-              <div className="flex gap-2">
-                {r.status === "pending" && (
+              {r.status === "pending" && (
+                <div className="flex gap-2">
                   <Button
                     size="sm"
                     variant="outline"
                     className="text-xs gap-1"
                     disabled={processing === r.id}
-                    onClick={() => handleMarkRegistered(r)}
+                    onClick={() => handleApproveRegistered(r)}
                   >
                     <CheckCircle className="h-3 w-3" />
-                    登録済みにする（+500pt）
+                    登録承認（+500pt）
                   </Button>
-                )}
-                {r.status === "registered" && (
                   <Button
                     size="sm"
                     className="text-xs gap-1"
                     disabled={processing === r.id}
-                    onClick={() => handleMarkActive(r)}
+                    onClick={() => handleApproveActive(r)}
                   >
                     <Play className="h-3 w-3" />
-                    稼働開始にする（+15,000pt）
+                    稼働承認（+15,000pt）
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           ))}
         </CardContent>

@@ -12,8 +12,8 @@ import AppLayout from "@/components/AppLayout";
 
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
   pending: { label: "申請中", variant: "secondary" },
-  registered: { label: "登録済み（+500pt）", variant: "outline" },
-  active: { label: "稼働開始（+15,000pt）", variant: "default" },
+  completed_registered: { label: "取得完了（+500pt）", variant: "outline" },
+  completed_active: { label: "取得完了（+15,500pt）", variant: "default" },
 };
 
 function generateCode() {
