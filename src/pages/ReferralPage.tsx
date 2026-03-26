@@ -12,8 +12,8 @@ import AppLayout from "@/components/AppLayout";
 
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
   pending: { label: "申請中", variant: "secondary" },
-  registered: { label: "登録済み（+500pt）", variant: "outline" },
-  active: { label: "稼働開始（+15,000pt）", variant: "default" },
+  completed_registered: { label: "取得完了（+500pt）", variant: "outline" },
+  completed_active: { label: "取得完了（+15,500pt）", variant: "default" },
 };
 
 function generateCode() {
@@ -181,8 +181,7 @@ const ReferralPage = () => {
                       {status.label}
                     </Badge>
                   </div>
-                  {/* Show referred user's points if registered */}
-                  {r.status !== "pending" && pts !== undefined && (
+                  {pts !== undefined && pts > 0 && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Coins className="h-3 w-3" />
                       <span>紹介先の現在ポイント: <strong className="text-foreground">{pts.toLocaleString()}pt</strong></span>
