@@ -295,6 +295,7 @@ export type Database = {
           friend_name: string
           id: string
           points_awarded: boolean
+          referral_code: string | null
           referrer_id: string
           status: string
         }
@@ -304,6 +305,7 @@ export type Database = {
           friend_name: string
           id?: string
           points_awarded?: boolean
+          referral_code?: string | null
           referrer_id: string
           status?: string
         }
@@ -313,6 +315,7 @@ export type Database = {
           friend_name?: string
           id?: string
           points_awarded?: boolean
+          referral_code?: string | null
           referrer_id?: string
           status?: string
         }
