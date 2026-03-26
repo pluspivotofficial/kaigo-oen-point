@@ -56,6 +56,57 @@ export type Database = {
         }
         Relationships: []
       }
+      login_bonus_claimed: {
+        Row: {
+          claimed_at: string
+          id: string
+          milestone: number
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          milestone: number
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          milestone?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      login_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_login_date: string
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_login_date?: string
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_login_date?: string
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       points_history: {
         Row: {
           created_at: string
