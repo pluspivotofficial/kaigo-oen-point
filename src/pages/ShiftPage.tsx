@@ -117,7 +117,7 @@ const ShiftPage = () => {
         start_time: startTime,
         end_time: endTime,
         hours,
-        points_earned: hours,
+        points_earned: earnedPoints,
         facility_name: facilityName || null,
       }).eq("id", editingShiftId).select().single();
 
@@ -129,7 +129,7 @@ const ShiftPage = () => {
 
       // Update points_history for this shift
       await supabase.from("points_history")
-        .update({ points: hours, description: `${defaults.label}勤務` })
+        .update({ points: earnedPoints, description: `${defaults.label}勤務${isInCampaign ? "（キャンペーン10倍）" : ""}` })
         .eq("shift_id", editingShiftId);
 
       setSubmittedShifts((prev) => prev.map((s) => s.id === editingShiftId ? (updatedShift as ShiftRow) : s));
@@ -150,7 +150,7 @@ const ShiftPage = () => {
         start_time: startTime,
         end_time: endTime,
         hours,
-        points_earned: hours,
+        points_earned: earnedPoints,
         facility_name: facilityName || null,
       }).select().single();
 
@@ -162,8 +162,8 @@ const ShiftPage = () => {
 
       await supabase.from("points_history").insert({
         user_id: user.id,
-        description: `${defaults.label}勤務`,
-        points: hours,
+        description: `${defaults.label}勤務${isInCampaign ? "（キャンペーン10倍）" : ""}`,
+        points: earnedPoints,
         type: "earn",
         shift_id: shiftData.id,
       });
