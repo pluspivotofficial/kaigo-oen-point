@@ -43,6 +43,7 @@ interface ShiftRow {
 const ShiftPage = () => {
   const { user } = useAuth();
   const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(new Date());
+  const [isInCampaign, setIsInCampaign] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedShift, setSelectedShift] = useState<ShiftType | null>(null);
   const [startTime, setStartTime] = useState("");
@@ -59,7 +60,10 @@ const ShiftPage = () => {
     supabase.from("profiles").select("first_launch_date").eq("user_id", user.id).single()
       .then(({ data }) => {
         if (data?.first_launch_date) {
-          setFirstLaunchDate(new Date(data.first_launch_date));
+          const launch = new Date(data.first_launch_date);
+          setFirstLaunchDate(launch);
+          const diffDays = Math.ceil((new Date().getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays <= 7) setIsInCampaign(true);
         }
       });
     supabase.from("shifts").select("*").eq("user_id", user.id).order("shift_date", { ascending: true })
@@ -75,10 +79,14 @@ const ShiftPage = () => {
     setEndTime(defaults.endTime);
   };
 
+  const pointsPerHour = isInCampaign ? 10 : 1;
+
   const hours = useMemo(() => {
     if (!startTime || !endTime || !selectedShift) return 0;
     return calcHours(startTime, endTime, selectedShift === "night");
   }, [startTime, endTime, selectedShift]);
+
+  const earnedPoints = hours * pointsPerHour;
 
   const resetForm = () => {
     setSelectedDate(undefined);
