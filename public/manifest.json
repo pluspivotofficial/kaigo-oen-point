@@ -1,6 +1,6 @@
 {
-  "name": "ホップポイント",
-  "short_name": "ホップポイント",
+  "name": "介護職応援ポイント",
+  "short_name": "介護職応援ポイント",
   "description": "介護派遣で勤務してポイントを貯めよう",
   "start_url": "/",
   "display": "standalone",
