@@ -171,7 +171,7 @@ const ShiftPage = () => {
       setSubmittedShifts((prev) => [...prev, shiftData as ShiftRow]);
       toast({
         title: getRandomPraise(),
-        description: `${selectedDate.toLocaleDateString("ja-JP")} ${defaults.label} ${startTime}〜${endTime}（+${hours}ポイント）`,
+        description: `${selectedDate.toLocaleDateString("ja-JP")} ${defaults.label} ${startTime}〜${endTime}（+${earnedPoints}ポイント）`,
       });
     }
 
