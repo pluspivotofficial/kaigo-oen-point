@@ -291,7 +291,7 @@ const ShiftPage = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">勤務時間</span>
-                  <Badge variant="secondary" className="text-xs font-mono">{hours}時間 → +{hours} pt</Badge>
+                  <Badge variant="secondary" className="text-xs font-mono">{hours}時間 → +{earnedPoints} pt{isInCampaign ? " (10倍)" : ""}</Badge>
                 </div>
               </div>
             )}
