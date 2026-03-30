@@ -174,14 +174,19 @@ export type Database = {
           care_qualifications: string | null
           created_at: string
           date_of_birth: string | null
+          dispatch_company: string | null
           display_name: string | null
+          employment_type: string | null
           facility_name: string | null
           first_launch_date: string
           full_name: string | null
+          hourly_rate: number | null
           id: string
           prefecture: string | null
+          preferred_shift: string | null
           updated_at: string
           user_id: string
+          weekly_days: string | null
         }
         Insert: {
           address?: string | null
@@ -190,14 +195,19 @@ export type Database = {
           care_qualifications?: string | null
           created_at?: string
           date_of_birth?: string | null
+          dispatch_company?: string | null
           display_name?: string | null
+          employment_type?: string | null
           facility_name?: string | null
           first_launch_date?: string
           full_name?: string | null
+          hourly_rate?: number | null
           id?: string
           prefecture?: string | null
+          preferred_shift?: string | null
           updated_at?: string
           user_id: string
+          weekly_days?: string | null
         }
         Update: {
           address?: string | null
@@ -206,14 +216,19 @@ export type Database = {
           care_qualifications?: string | null
           created_at?: string
           date_of_birth?: string | null
+          dispatch_company?: string | null
           display_name?: string | null
+          employment_type?: string | null
           facility_name?: string | null
           first_launch_date?: string
           full_name?: string | null
+          hourly_rate?: number | null
           id?: string
           prefecture?: string | null
+          preferred_shift?: string | null
           updated_at?: string
           user_id?: string
+          weekly_days?: string | null
         }
         Relationships: []
       }
