@@ -10,8 +10,7 @@ import AppLayout from "@/components/AppLayout";
 
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
   pending: { label: "申請中", variant: "secondary" },
-  completed_registered: { label: "取得完了（+500pt）", variant: "outline" },
-  completed_active: { label: "取得完了（+15,500pt）", variant: "default" },
+  completed_registered: { label: "取得完了（+100pt）", variant: "default" },
 };
 
 function generateCode() {
@@ -97,33 +96,33 @@ const ReferralPage = () => {
       <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6">
         <CardContent className="p-6 text-center">
           <Gift className="h-10 w-10 text-primary-foreground mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-primary-foreground mb-1">最大 15,500 ポイント！</h2>
-          <p className="text-primary-foreground/70 text-sm">登録で500pt + 稼働開始で15,000pt</p>
+          <h2 className="text-xl font-bold text-primary-foreground mb-1">紹介で 100 ポイント！</h2>
+          <p className="text-primary-foreground/70 text-sm">友人が登録完了すると紹介元に100ptが付与されます</p>
         </CardContent>
       </Card>
 
-      {/* 2-step explanation */}
+      {/* Explanation */}
       <Card className="mb-5">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start gap-3">
             <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
             <div>
-              <p className="font-semibold text-sm">登録完了で <span className="text-primary">+500pt</span></p>
-              <p className="text-xs text-muted-foreground">紹介した友人が招待リンクから登録完了した時点で付与</p>
+              <p className="font-semibold text-sm">招待リンクを共有</p>
+              <p className="text-xs text-muted-foreground">ボタンを押してリンクをコピー、LINEなどで送信</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
             <div>
-              <p className="font-semibold text-sm">稼働開始で <span className="text-primary">+15,000pt</span></p>
-              <p className="text-xs text-muted-foreground">友人が初回勤務を開始した時点で管理者が付与</p>
+              <p className="font-semibold text-sm">友人が登録完了で <span className="text-primary">+100pt</span></p>
+              <p className="text-xs text-muted-foreground">管理者承認後にポイントが付与されます</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">★</span>
             <div>
-              <p className="font-semibold text-sm">紹介先にもポイント付与！</p>
-              <p className="text-xs text-muted-foreground">登録した友人にも稼働開始で10,000pt付与されます</p>
+              <p className="font-semibold text-sm">2次紹介ボーナスも！</p>
+              <p className="text-xs text-muted-foreground">紹介した人がさらに紹介すると大元の親にも100pt付与</p>
             </div>
           </div>
         </CardContent>

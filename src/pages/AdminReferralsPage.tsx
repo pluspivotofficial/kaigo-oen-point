@@ -6,7 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-import { Users, CheckCircle, Play } from "lucide-react";
+import { Users, CheckCircle } from "lucide-react";
 
 interface Referral {
   id: string;
@@ -50,11 +50,11 @@ const AdminReferralsPage = () => {
       return;
     }
 
-    // Award 500pt to referrer
+    // Award 100pt to referrer
     await supabase.from("points_history").insert({
       user_id: referral.referrer_id,
       description: `紹介ボーナス（${referral.friend_name || "紹介ユーザー"}さん登録）`,
-      points: 500,
+      points: 100,
       type: "earn",
     });
 
@@ -62,48 +62,10 @@ const AdminReferralsPage = () => {
     await awardGrandparentBonus(referral.referrer_id, referral.friend_name || "紹介ユーザー", "登録");
 
     setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "completed_registered", points_awarded: true } : r));
-    toast({ title: `${referral.friend_name || "紹介ユーザー"}さんを承認し、500ptを付与しました` });
+    toast({ title: `${referral.friend_name || "紹介ユーザー"}さんを承認し、100ptを付与しました` });
     setProcessing(null);
   };
 
-  const handleApproveActive = async (referral: Referral) => {
-    setProcessing(referral.id);
-    const { error } = await supabase
-      .from("referrals")
-      .update({ status: "completed_active", points_awarded: true })
-      .eq("id", referral.id);
-
-    if (error) {
-      toast({ title: "エラー", description: error.message, variant: "destructive" });
-      setProcessing(null);
-      return;
-    }
-
-    // Award 10,000pt to referrer
-    await supabase.from("points_history").insert({
-      user_id: referral.referrer_id,
-      description: `紹介ボーナス（${referral.friend_name || "紹介ユーザー"}さん稼働開始）`,
-      points: 10000,
-      type: "earn",
-    });
-
-    // Award 10,000pt to the referred user
-    if (referral.referred_user_id) {
-      await supabase.from("points_history").insert({
-        user_id: referral.referred_user_id,
-        description: `稼働開始ボーナス（紹介経由）`,
-        points: 10000,
-        type: "earn",
-      });
-    }
-
-    // Check for grandparent referrer (2nd level)
-    await awardGrandparentBonus(referral.referrer_id, referral.friend_name || "紹介ユーザー", "稼働開始");
-
-    setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "completed_active", points_awarded: true } : r));
-    toast({ title: `${referral.friend_name || "紹介ユーザー"}さんを承認し、ポイントを付与しました` });
-    setProcessing(null);
-  };
 
   const awardGrandparentBonus = async (referrerId: string, friendName: string, action: string) => {
     try {
@@ -129,8 +91,7 @@ const AdminReferralsPage = () => {
 
   const statusBadge = (status: string) => {
     switch (status) {
-      case "completed_registered": return <Badge variant="outline" className="text-xs">承認済み（登録）</Badge>;
-      case "completed_active": return <Badge variant="default" className="text-xs">承認済み（稼働）</Badge>;
+      case "completed_registered": return <Badge variant="default" className="text-xs">承認済み（+100pt）</Badge>;
       default: return <Badge variant="secondary" className="text-xs">申請中</Badge>;
     }
   };
@@ -167,20 +128,7 @@ const AdminReferralsPage = () => {
                     onClick={() => handleApproveRegistered(r)}
                   >
                     <CheckCircle className="h-3 w-3" />
-                    登録承認（+500pt）
-                  </Button>
-                </div>
-              )}
-              {r.status === "completed_registered" && (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="text-xs gap-1"
-                    disabled={processing === r.id}
-                    onClick={() => handleApproveActive(r)}
-                  >
-                    <Play className="h-3 w-3" />
-                    稼働承認（+10,000pt）
+                    登録承認（+100pt）
                   </Button>
                 </div>
               )}

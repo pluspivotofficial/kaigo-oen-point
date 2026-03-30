@@ -43,6 +43,7 @@ interface ShiftRow {
 const ShiftPage = () => {
   const { user } = useAuth();
   const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(new Date());
+  const [isInCampaign, setIsInCampaign] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedShift, setSelectedShift] = useState<ShiftType | null>(null);
   const [startTime, setStartTime] = useState("");
@@ -59,7 +60,10 @@ const ShiftPage = () => {
     supabase.from("profiles").select("first_launch_date").eq("user_id", user.id).single()
       .then(({ data }) => {
         if (data?.first_launch_date) {
-          setFirstLaunchDate(new Date(data.first_launch_date));
+          const launch = new Date(data.first_launch_date);
+          setFirstLaunchDate(launch);
+          const diffDays = Math.ceil((new Date().getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays <= 7) setIsInCampaign(true);
         }
       });
     supabase.from("shifts").select("*").eq("user_id", user.id).order("shift_date", { ascending: true })
@@ -75,10 +79,14 @@ const ShiftPage = () => {
     setEndTime(defaults.endTime);
   };
 
+  const pointsPerHour = isInCampaign ? 10 : 1;
+
   const hours = useMemo(() => {
     if (!startTime || !endTime || !selectedShift) return 0;
     return calcHours(startTime, endTime, selectedShift === "night");
   }, [startTime, endTime, selectedShift]);
+
+  const earnedPoints = hours * pointsPerHour;
 
   const resetForm = () => {
     setSelectedDate(undefined);
@@ -109,7 +117,7 @@ const ShiftPage = () => {
         start_time: startTime,
         end_time: endTime,
         hours,
-        points_earned: hours,
+        points_earned: earnedPoints,
         facility_name: facilityName || null,
       }).eq("id", editingShiftId).select().single();
 
@@ -121,7 +129,7 @@ const ShiftPage = () => {
 
       // Update points_history for this shift
       await supabase.from("points_history")
-        .update({ points: hours, description: `${defaults.label}勤務` })
+        .update({ points: earnedPoints, description: `${defaults.label}勤務${isInCampaign ? "（キャンペーン10倍）" : ""}` })
         .eq("shift_id", editingShiftId);
 
       setSubmittedShifts((prev) => prev.map((s) => s.id === editingShiftId ? (updatedShift as ShiftRow) : s));
@@ -142,7 +150,7 @@ const ShiftPage = () => {
         start_time: startTime,
         end_time: endTime,
         hours,
-        points_earned: hours,
+        points_earned: earnedPoints,
         facility_name: facilityName || null,
       }).select().single();
 
@@ -154,8 +162,8 @@ const ShiftPage = () => {
 
       await supabase.from("points_history").insert({
         user_id: user.id,
-        description: `${defaults.label}勤務`,
-        points: hours,
+        description: `${defaults.label}勤務${isInCampaign ? "（キャンペーン10倍）" : ""}`,
+        points: earnedPoints,
         type: "earn",
         shift_id: shiftData.id,
       });
@@ -163,7 +171,7 @@ const ShiftPage = () => {
       setSubmittedShifts((prev) => [...prev, shiftData as ShiftRow]);
       toast({
         title: getRandomPraise(),
-        description: `${selectedDate.toLocaleDateString("ja-JP")} ${defaults.label} ${startTime}〜${endTime}（+${hours}ポイント）`,
+        description: `${selectedDate.toLocaleDateString("ja-JP")} ${defaults.label} ${startTime}〜${endTime}（+${earnedPoints}ポイント）`,
       });
     }
 
@@ -283,7 +291,7 @@ const ShiftPage = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">勤務時間</span>
-                  <Badge variant="secondary" className="text-xs font-mono">{hours}時間 → +{hours} pt</Badge>
+                  <Badge variant="secondary" className="text-xs font-mono">{hours}時間 → +{earnedPoints} pt{isInCampaign ? " (10倍)" : ""}</Badge>
                 </div>
               </div>
             )}
