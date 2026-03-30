@@ -50,11 +50,11 @@ const AdminReferralsPage = () => {
       return;
     }
 
-    // Award 500pt to referrer
+    // Award 100pt to referrer
     await supabase.from("points_history").insert({
       user_id: referral.referrer_id,
       description: `紹介ボーナス（${referral.friend_name || "紹介ユーザー"}さん登録）`,
-      points: 500,
+      points: 100,
       type: "earn",
     });
 
@@ -62,7 +62,7 @@ const AdminReferralsPage = () => {
     await awardGrandparentBonus(referral.referrer_id, referral.friend_name || "紹介ユーザー", "登録");
 
     setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "completed_registered", points_awarded: true } : r));
-    toast({ title: `${referral.friend_name || "紹介ユーザー"}さんを承認し、500ptを付与しました` });
+    toast({ title: `${referral.friend_name || "紹介ユーザー"}さんを承認し、100ptを付与しました` });
     setProcessing(null);
   };
 
