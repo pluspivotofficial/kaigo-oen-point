@@ -73,6 +73,86 @@ const MOCK_NOTICES = [
   },
 ];
 
+const ProfileCompletionBanner = ({ userId }: { userId?: string }) => {
+  const [show, setShow] = useState(false);
+  const [completed, setCompleted] = useState(0);
+  const [total] = useState(11); // 11 profile fields
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("profiles")
+      .select("full_name, avatar_url, address, date_of_birth, care_experience, care_qualifications, employment_type, dispatch_company, hourly_rate, weekly_days, preferred_shift")
+      .eq("user_id", userId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        let count = 0;
+        const d = data as any;
+        ["full_name", "avatar_url", "address", "date_of_birth", "care_experience", "care_qualifications", "employment_type", "dispatch_company", "weekly_days", "preferred_shift"].forEach(k => {
+          if (d[k] && String(d[k]).trim() !== "") count++;
+        });
+        if (d.hourly_rate && d.hourly_rate > 0) count++;
+        setCompleted(count);
+        if (count < total) setShow(true);
+      });
+  }, [userId]);
+
+  if (!show) return null;
+
+  return (
+    <Card className="mb-5 border-primary/30 bg-primary/5">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Gift className="h-5 w-5 text-primary" />
+          <span className="font-semibold text-sm">プロフィールを完成させよう！</span>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2">
+          全項目入力で <span className="text-primary font-bold">500ポイント</span> ボーナス！（残り{total - completed}項目）
+        </p>
+        <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
+          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(completed / total) * 100}%` }} />
+        </div>
+        <Button size="sm" variant="outline" onClick={() => navigate("/profile")} className="w-full text-xs">
+          プロフィールを入力する
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+const CampaignBanner = ({ userId }: { userId?: string }) => {
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("profiles").select("first_launch_date").eq("user_id", userId).single()
+      .then(({ data }) => {
+        if (!data?.first_launch_date) return;
+        const launch = new Date(data.first_launch_date);
+        const now = new Date();
+        const diffDays = Math.ceil((now.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 7) setDaysLeft(7 - diffDays);
+      });
+  }, [userId]);
+
+  if (daysLeft === null || daysLeft <= 0) return null;
+
+  return (
+    <Card className="mb-5 border-secondary/30 bg-gradient-to-r from-secondary/10 to-primary/10">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="h-5 w-5 text-secondary" />
+          <span className="font-semibold text-sm">🎉 新規登録キャンペーン中！</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          シフト1時間あたり <span className="text-primary font-bold">10ポイント</span>！残り <span className="font-bold text-foreground">{daysLeft}日</span>
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -143,7 +223,13 @@ const Dashboard = () => {
   };
 
   return (
-    <AppLayout title="ホップポイント">
+    <AppLayout title="介護職応援ポイント">
+      {/* Profile Completion Banner */}
+      <ProfileCompletionBanner userId={user?.id} />
+
+      {/* 7-Day Campaign Banner */}
+      <CampaignBanner userId={user?.id} />
+
       {/* Prefecture Setup Banner */}
       {prefectureLoaded && !prefecture && (
         <Card className="mb-5 border-secondary/30 bg-secondary/5">
@@ -332,7 +418,7 @@ const Dashboard = () => {
           </div>
           <div>
             <p className="font-semibold text-sm">友人を紹介する</p>
-            <p className="text-xs text-muted-foreground">登録で500pt＋稼働開始で15,000pt</p>
+            <p className="text-xs text-muted-foreground">紹介で100ptをGET</p>
           </div>
         </Button>
 
