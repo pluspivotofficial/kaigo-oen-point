@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageCircleQuestion, Plus, MessageSquare, Clock } from "lucide-react";
+import { MessageCircleQuestion, Plus, MessageSquare, Clock, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,8 @@ const QuestionsPage = () => {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
 
   const fetchQuestions = async () => {
     const { data } = await supabase
@@ -49,13 +51,50 @@ const QuestionsPage = () => {
       .select("*")
       .eq("is_approved", true)
       .order("created_at", { ascending: false });
-    if (data) setQuestions(data as Question[]);
+    if (data) {
+      setQuestions(data as Question[]);
+      await fetchLikes(data.map((q: any) => q.id));
+    }
     setLoading(false);
+  };
+
+  const fetchLikes = async (questionIds: string[]) => {
+    if (questionIds.length === 0) return;
+    const { data: allLikes } = await supabase
+      .from("question_likes")
+      .select("question_id, user_id")
+      .in("question_id", questionIds);
+    
+    if (allLikes) {
+      const counts: Record<string, number> = {};
+      const mine = new Set<string>();
+      allLikes.forEach((l: any) => {
+        counts[l.question_id] = (counts[l.question_id] || 0) + 1;
+        if (user && l.user_id === user.id) mine.add(l.question_id);
+      });
+      setLikeCounts(counts);
+      setMyLikes(mine);
+    }
   };
 
   useEffect(() => {
     fetchQuestions();
   }, []);
+
+  const toggleLike = async (e: React.MouseEvent, questionId: string) => {
+    e.stopPropagation();
+    if (!user) return;
+    
+    if (myLikes.has(questionId)) {
+      await supabase.from("question_likes").delete().eq("question_id", questionId).eq("user_id", user.id);
+      setMyLikes(prev => { const n = new Set(prev); n.delete(questionId); return n; });
+      setLikeCounts(prev => ({ ...prev, [questionId]: (prev[questionId] || 1) - 1 }));
+    } else {
+      await supabase.from("question_likes").insert({ question_id: questionId, user_id: user.id });
+      setMyLikes(prev => new Set(prev).add(questionId));
+      setLikeCounts(prev => ({ ...prev, [questionId]: (prev[questionId] || 0) + 1 }));
+    }
+  };
 
   const handleSubmit = async () => {
     if (!user || !title.trim()) return;
@@ -171,6 +210,13 @@ const QuestionsPage = () => {
                         <MessageSquare className="h-2.5 w-2.5" />
                         {q.answer_count}
                       </Badge>
+                      <button
+                        className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                        onClick={(e) => toggleLike(e, q.id)}
+                      >
+                        <Heart className={`h-3 w-3 ${myLikes.has(q.id) ? "fill-destructive text-destructive" : ""}`} />
+                        {likeCounts[q.id] || 0}
+                      </button>
                     </div>
                   </div>
                 </div>
