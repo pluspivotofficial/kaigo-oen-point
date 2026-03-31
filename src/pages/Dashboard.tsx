@@ -76,7 +76,7 @@ const MOCK_NOTICES = [
 const ProfileCompletionBanner = ({ userId }: { userId?: string }) => {
   const [show, setShow] = useState(false);
   const [completed, setCompleted] = useState(0);
-  const [total] = useState(11); // 11 profile fields
+  const [total] = useState(11);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -165,16 +165,15 @@ const Dashboard = () => {
   const [columns, setColumns] = useState<ColumnPreview[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const { streak } = useLoginBonus(user?.id);
+
   useEffect(() => {
     if (!user) return;
 
-    // Total points
     supabase.from("points_history").select("points").eq("user_id", user.id)
       .then(({ data }) => {
         if (data) setTotalPoints(data.reduce((sum, r) => sum + r.points, 0));
       });
 
-    // Monthly stats
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
     supabase.from("shifts").select("hours").eq("user_id", user.id).gte("shift_date", monthStart)
@@ -185,14 +184,12 @@ const Dashboard = () => {
         }
       });
 
-    // Get prefecture
     supabase.from("profiles").select("prefecture").eq("user_id", user.id).single()
       .then(({ data }) => {
         setPrefecture(data?.prefecture ?? null);
         setPrefectureLoaded(true);
       });
 
-    // Fetch published columns
     supabase.from("columns_articles")
       .select("id, title, excerpt, thumbnail_url, category, published_at")
       .eq("is_published", true)
@@ -202,7 +199,6 @@ const Dashboard = () => {
         if (data) setColumns(data as ColumnPreview[]);
       });
 
-    // Check admin role
     supabase.from("user_roles").select("role").eq("user_id", user.id)
       .then(({ data }) => {
         if (data?.some((r: any) => r.role === "admin")) setIsAdmin(true);
@@ -285,6 +281,66 @@ const Dashboard = () => {
           </p>
         </CardContent>
       </Card>
+
+      {/* Quick Actions - right after points */}
+      <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+        クイックアクション
+      </h2>
+      <div className="space-y-3 mb-6">
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/shift")}>
+          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+            <CalendarDays className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">シフトを申請する</p>
+            <p className="text-xs text-muted-foreground">カレンダーから日程と時間帯を選択</p>
+          </div>
+        </Button>
+
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/points")}>
+          <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center">
+            <Coins className="h-5 w-5 text-secondary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">ポイントを確認・還元</p>
+            <p className="text-xs text-muted-foreground">履歴確認と還元サイトへ</p>
+          </div>
+        </Button>
+
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/referral")}>
+          <div className="h-9 w-9 rounded-lg bg-reward-purple/10 flex items-center justify-center">
+            <Users className="h-5 w-5 text-reward-purple" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">友人を紹介する</p>
+            <p className="text-xs text-muted-foreground">紹介で最大600ptをGET</p>
+          </div>
+        </Button>
+
+        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/ranking")}>
+          <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center">
+            <Trophy className="h-5 w-5 text-secondary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm">都道府県ランキング</p>
+            <p className="text-xs text-muted-foreground">地域別の累計稼働時間を確認</p>
+          </div>
+        </Button>
+
+        <a href="https://hop-kaigo.jp/register/seeker" target="_blank" rel="noopener noreferrer" className="block">
+          <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 text-left whitespace-normal">
+            <div className="h-9 w-9 rounded-lg bg-reward-gold/10 flex items-center justify-center flex-shrink-0">
+              <ExternalLink className="h-5 w-5 text-reward-gold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">ポイント有効化・還元サイト</p>
+              <p className="text-xs text-muted-foreground leading-relaxed break-words">
+                会員登録→「仕事を開始」でポイント有効化。以降は累計勤務時間に応じて1時間=1pt加算されます。
+              </p>
+            </div>
+          </Button>
+        </a>
+      </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3 mb-6">
@@ -388,66 +444,13 @@ const Dashboard = () => {
         </>
       )}
 
-      <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-        クイックアクション
-      </h2>
+      {/* Admin & Settings */}
       <div className="space-y-3">
-        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/shift")}>
-          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <CalendarDays className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm">シフトを申請する</p>
-            <p className="text-xs text-muted-foreground">カレンダーから日程と時間帯を選択</p>
-          </div>
-        </Button>
-
-        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/points")}>
-          <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center">
-            <Coins className="h-5 w-5 text-secondary" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm">ポイントを確認・還元</p>
-            <p className="text-xs text-muted-foreground">履歴確認と還元サイトへ</p>
-          </div>
-        </Button>
-
-        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/referral")}>
-          <div className="h-9 w-9 rounded-lg bg-reward-purple/10 flex items-center justify-center">
-            <Users className="h-5 w-5 text-reward-purple" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm">友人を紹介する</p>
-            <p className="text-xs text-muted-foreground">紹介で100ptをGET</p>
-          </div>
-        </Button>
-
-        <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/ranking")}>
-          <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center">
-            <Trophy className="h-5 w-5 text-secondary" />
-          </div>
-          <div>
-            <p className="font-semibold text-sm">都道府県ランキング</p>
-            <p className="text-xs text-muted-foreground">地域別の累計稼働時間を確認</p>
-          </div>
-        </Button>
-
-        <a href="https://hop-kaigo.jp/register/seeker" target="_blank" rel="noopener noreferrer" className="block">
-          <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 text-left whitespace-normal">
-            <div className="h-9 w-9 rounded-lg bg-reward-gold/10 flex items-center justify-center flex-shrink-0">
-              <ExternalLink className="h-5 w-5 text-reward-gold" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-sm">ポイント有効化・還元サイト</p>
-              <p className="text-xs text-muted-foreground leading-relaxed break-words">
-                会員登録→「仕事を開始」でポイント有効化。以降は累計勤務時間に応じて1時間=1pt加算されます。
-              </p>
-            </div>
-          </Button>
-        </a>
-
         {isAdmin && (
           <>
+            <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+              管理者メニュー
+            </h2>
             <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/columns")}>
               <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
                 <Settings className="h-5 w-5 text-muted-foreground" />
@@ -462,8 +465,8 @@ const Dashboard = () => {
                 <FileText className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="font-semibold text-sm">質問管理</p>
-                <p className="text-xs text-muted-foreground">質問の承認・却下</p>
+                <p className="font-semibold text-sm">掲示板管理</p>
+                <p className="text-xs text-muted-foreground">投稿の承認・却下</p>
               </div>
             </Button>
             <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/referrals")}>

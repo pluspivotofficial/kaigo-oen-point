@@ -243,6 +243,36 @@ const ProfilePage = () => {
       newPoints += 500;
     }
 
+    // Check if all non-photo fields filled → award 500pt to referrer
+    const nonPhotoFields = PROFILE_FIELDS.filter(f => f.key !== "avatar_url");
+    const nonPhotoComplete = nonPhotoFields.every(f => isFieldFilled(f.key, profile[f.key]));
+    if (nonPhotoComplete) {
+      // Check if this user was referred
+      const { data: refData } = await supabase
+        .from("referrals")
+        .select("id, referrer_id")
+        .eq("referred_user_id", user.id)
+        .limit(1);
+      if (refData && refData.length > 0) {
+        const referral = refData[0];
+        // Check if bonus already awarded
+        const { data: existingBonus } = await supabase
+          .from("points_history")
+          .select("id")
+          .eq("user_id", referral.referrer_id)
+          .eq("description", `紹介先プロフィール完成ボーナス（${user.id}）`)
+          .limit(1);
+        if (!existingBonus || existingBonus.length === 0) {
+          await supabase.from("points_history").insert({
+            user_id: referral.referrer_id,
+            description: `紹介先プロフィール完成ボーナス（${user.id}）`,
+            points: 500,
+            type: "earn",
+          });
+        }
+      }
+    }
+
     setOriginalProfile({ ...profile });
     setSaving(false);
     toast({
