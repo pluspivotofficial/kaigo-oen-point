@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const tabs = [
   { path: "/", label: "ホーム", icon: Home },
   { path: "/shift", label: "シフト", icon: CalendarDays },
-  { path: "/questions", label: "質問箱", icon: MessageCircleQuestion },
+  { path: "/questions", label: "掲示板", icon: MessageCircleQuestion },
   { path: "/points", label: "ポイント", icon: Coins },
   { path: "/referral", label: "紹介", icon: Users },
   { path: "/profile", label: "マイページ", icon: User },

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Gift, Copy, Check, Share2, Link2, Coins } from "lucide-react";
+import { Users, Gift, Copy, Check, Share2, Link2, Coins, AlertTriangle, Smartphone, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,6 @@ function generateCode() {
 const ReferralPage = () => {
   const { user } = useAuth();
   const [referralCount, setReferralCount] = useState(0);
-  const [monthlyCount, setMonthlyCount] = useState(0);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [referralPoints, setReferralPoints] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -37,11 +36,6 @@ const ReferralPage = () => {
         if (data) {
           setReferrals(data);
           setReferralCount(data.length);
-          // Count referrals created this month
-          const now = new Date();
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-          const thisMonth = data.filter((r: any) => r.created_at >= monthStart).length;
-          setMonthlyCount(thisMonth);
           fetchReferralPoints();
         }
       });
@@ -69,8 +63,8 @@ const ReferralPage = () => {
 
   const handleCreateLink = async () => {
     if (!user) return;
-    if (monthlyCount >= 5) {
-      toast({ title: "月間上限に達しています", description: "紹介は毎月5人までです", variant: "destructive" });
+    if (referralCount >= 5) {
+      toast({ title: "紹介上限に達しています", description: "紹介は5枠までです", variant: "destructive" });
       return;
     }
     setSubmitting(true);
@@ -93,7 +87,6 @@ const ReferralPage = () => {
 
     setReferrals((prev) => [data, ...prev]);
     setReferralCount((c) => c + 1);
-    setMonthlyCount((c) => c + 1);
     toast({
       title: "招待リンクを作成しました！",
       description: "クリップボードにコピーされました。LINEなどで共有してください。",
@@ -107,8 +100,24 @@ const ReferralPage = () => {
       <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6">
         <CardContent className="p-6 text-center">
           <Gift className="h-10 w-10 text-primary-foreground mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-primary-foreground mb-1">紹介で 100 ポイント！</h2>
-          <p className="text-primary-foreground/70 text-sm">友人が登録完了すると紹介元に100ptが付与されます</p>
+          <h2 className="text-xl font-bold text-primary-foreground mb-1">紹介で最大 600 ポイント！</h2>
+          <p className="text-primary-foreground/70 text-sm">登録完了で100pt + プロフィール入力完了で500pt</p>
+        </CardContent>
+      </Card>
+
+      {/* Important Notice */}
+      <Card className="mb-5 border-destructive/30 bg-destructive/5">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm text-destructive">紹介先への注意事項</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                本アプリは<strong>介護職として就労中の方</strong>、または<strong>介護資格を保有している方</strong>を対象としたアプリです。
+                紹介先の方が対象外の場合、ポイント付与が承認されない場合があります。
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -118,29 +127,29 @@ const ReferralPage = () => {
           <div className="flex items-start gap-3">
             <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
             <div>
-              <p className="font-semibold text-sm">招待リンクを共有</p>
-              <p className="text-xs text-muted-foreground">ボタンを押してリンクをコピー、LINEなどで送信</p>
+              <p className="font-semibold text-sm">友人が登録完了で <span className="text-primary">+100pt</span></p>
+              <p className="text-xs text-muted-foreground">管理者承認後にポイントが付与されます</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
             <div>
-              <p className="font-semibold text-sm">友人が登録完了で <span className="text-primary">+100pt</span></p>
-              <p className="text-xs text-muted-foreground">管理者承認後にポイントが付与されます</p>
+              <p className="font-semibold text-sm">紹介先がプロフィール入力完了で <span className="text-primary">+500pt</span></p>
+              <p className="text-xs text-muted-foreground">紹介先が写真以外の全項目を入力すると、紹介元に500pt付与されます</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Monthly limit info */}
+      {/* Limit info */}
       <Card className="mb-5 border-secondary/20 bg-secondary/5">
         <CardContent className="p-4 text-center">
-          <p className="text-sm">今月の紹介: <strong>{monthlyCount}/5人</strong></p>
-          <p className="text-xs text-muted-foreground mt-1">毎月5人まで紹介できます</p>
+          <p className="text-sm">紹介枠: <strong>{referralCount}/5枠</strong></p>
+          <p className="text-xs text-muted-foreground mt-1">最大5枠まで紹介できます</p>
         </CardContent>
       </Card>
 
-      {/* Create Link Button */}
+      {/* Create Link Button with Visual Steps */}
       <Card className="mb-5">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
@@ -149,12 +158,38 @@ const ReferralPage = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-xs text-muted-foreground mb-3">
-            ボタンを押すと招待リンクが作成され、クリップボードにコピーされます。LINEやメッセージで共有してください。
-          </p>
-          <Button className="w-full gap-2" size="lg" disabled={submitting || monthlyCount >= 5} onClick={handleCreateLink}>
+          {/* Visual How-To Steps */}
+          <div className="bg-muted/50 rounded-lg p-4 mb-4 space-y-3">
+            <p className="text-xs font-semibold text-foreground mb-2">📋 招待リンクの送り方</p>
+            <div className="flex items-start gap-3">
+              <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">
+                ①
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
+                <p className="text-xs text-muted-foreground">下のボタンを押して<strong className="text-foreground">招待リンクをコピー</strong></p>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <div className="h-4 border-l-2 border-dashed border-muted-foreground/30" />
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">
+                ②
+              </div>
+              <div className="flex items-center gap-2 flex-1">
+                <div className="flex gap-1">
+                  <MessageSquare className="h-4 w-4 text-green-600 shrink-0" />
+                  <Smartphone className="h-4 w-4 text-blue-500 shrink-0" />
+                </div>
+                <p className="text-xs text-muted-foreground"><strong className="text-foreground">LINEやSMS</strong>にペーストすると招待コード付きリンクが送れます</p>
+              </div>
+            </div>
+          </div>
+
+          <Button className="w-full gap-2" size="lg" disabled={submitting || referralCount >= 5} onClick={handleCreateLink}>
             <Link2 className="h-4 w-4" />
-            {monthlyCount >= 5 ? "今月の上限に達しました" : submitting ? "作成中..." : "招待リンクを作成してコピー"}
+            {referralCount >= 5 ? "紹介上限に達しました" : submitting ? "作成中..." : "招待リンクを作成してコピー"}
           </Button>
         </CardContent>
       </Card>

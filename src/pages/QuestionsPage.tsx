@@ -117,7 +117,7 @@ const QuestionsPage = () => {
   };
 
   return (
-    <AppLayout title="質問箱">
+    <AppLayout title="掲示板">
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted-foreground">
           みんなの質問に答えよう！
