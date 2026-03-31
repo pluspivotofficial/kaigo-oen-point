@@ -129,13 +129,14 @@ const ReferralPage = () => {
               <p className="text-xs text-muted-foreground">管理者承認後にポイントが付与されます</p>
             </div>
           </div>
-          <div className="flex items-start gap-3">
-            <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">★</span>
-            <div>
-              <p className="font-semibold text-sm">2次紹介ボーナスも！</p>
-              <p className="text-xs text-muted-foreground">紹介した人がさらに紹介すると大元の親にも100pt付与</p>
-            </div>
-          </div>
+        </CardContent>
+      </Card>
+
+      {/* Monthly limit info */}
+      <Card className="mb-5 border-secondary/20 bg-secondary/5">
+        <CardContent className="p-4 text-center">
+          <p className="text-sm">今月の紹介: <strong>{monthlyCount}/5人</strong></p>
+          <p className="text-xs text-muted-foreground mt-1">毎月5人まで紹介できます</p>
         </CardContent>
       </Card>
 
