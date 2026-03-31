@@ -69,6 +69,10 @@ const ReferralPage = () => {
 
   const handleCreateLink = async () => {
     if (!user) return;
+    if (monthlyCount >= 5) {
+      toast({ title: "月間上限に達しています", description: "紹介は毎月5人までです", variant: "destructive" });
+      return;
+    }
     setSubmitting(true);
     const referralCode = `HOP-${generateCode()}`;
     const { data, error } = await supabase.from("referrals").insert({
