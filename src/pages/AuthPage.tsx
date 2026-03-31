@@ -107,22 +107,6 @@ const AuthPage = () => {
         type: "earn",
       });
 
-      // 2nd level bonus
-      const { data: parentReferral } = await supabase
-        .from("referrals")
-        .select("*")
-        .eq("referred_user_id", referral.referrer_id)
-        .limit(1)
-        .maybeSingle();
-
-      if (parentReferral) {
-        await supabase.from("points_history").insert({
-          user_id: parentReferral.referrer_id,
-          description: `2次紹介ボーナス（${userName || "新規ユーザー"}さん登録）`,
-          points: 100,
-          type: "earn",
-        });
-      }
     } catch (err) {
       console.error("Referral processing error:", err);
     }
