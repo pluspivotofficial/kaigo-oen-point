@@ -63,29 +63,6 @@ const AdminReferralsPage = () => {
     setProcessing(null);
   };
 
-
-  const awardGrandparentBonus = async (referrerId: string, friendName: string, action: string) => {
-    try {
-      const { data: parentReferral } = await supabase
-        .from("referrals")
-        .select("referrer_id")
-        .eq("referred_user_id", referrerId)
-        .limit(1)
-        .maybeSingle();
-
-      if (parentReferral) {
-        await supabase.from("points_history").insert({
-          user_id: parentReferral.referrer_id,
-          description: `2次紹介ボーナス（${friendName}さん${action}）`,
-          points: 100,
-          type: "earn",
-        });
-      }
-    } catch (err) {
-      console.error("Grandparent bonus error:", err);
-    }
-  };
-
   const statusBadge = (status: string) => {
     switch (status) {
       case "completed_registered": return <Badge variant="default" className="text-xs">承認済み（+100pt）</Badge>;
