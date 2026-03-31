@@ -56,7 +56,7 @@ const AuthPage = () => {
           email,
           password,
           options: {
-            data: { display_name: displayName, referral_code: referralCode || undefined, is_hop_employee: isHopEmployee },
+            data: { display_name: displayName, referral_code: referralCode || undefined, is_hop_employee: isHopEmployee, care_status: careStatus },
             emailRedirectTo: window.location.origin,
           },
         });
