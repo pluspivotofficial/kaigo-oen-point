@@ -152,9 +152,9 @@ const ReferralPage = () => {
           <p className="text-xs text-muted-foreground mb-3">
             ボタンを押すと招待リンクが作成され、クリップボードにコピーされます。LINEやメッセージで共有してください。
           </p>
-          <Button className="w-full gap-2" size="lg" disabled={submitting} onClick={handleCreateLink}>
+          <Button className="w-full gap-2" size="lg" disabled={submitting || monthlyCount >= 5} onClick={handleCreateLink}>
             <Link2 className="h-4 w-4" />
-            {submitting ? "作成中..." : "招待リンクを作成してコピー"}
+            {monthlyCount >= 5 ? "今月の上限に達しました" : submitting ? "作成中..." : "招待リンクを作成してコピー"}
           </Button>
         </CardContent>
       </Card>
