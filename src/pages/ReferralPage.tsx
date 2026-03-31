@@ -20,6 +20,7 @@ function generateCode() {
 const ReferralPage = () => {
   const { user } = useAuth();
   const [referralCount, setReferralCount] = useState(0);
+  const [monthlyCount, setMonthlyCount] = useState(0);
   const [referrals, setReferrals] = useState<any[]>([]);
   const [referralPoints, setReferralPoints] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
