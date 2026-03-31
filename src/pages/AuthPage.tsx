@@ -40,6 +40,10 @@ const AuthPage = () => {
       toast({ title: "ホップでの就業状況を選択してください", variant: "destructive" });
       return;
     }
+    if (!isLogin && !careStatus) {
+      toast({ title: "介護に関する状況を選択してください", variant: "destructive" });
+      return;
+    }
     setLoading(true);
 
     try {
