@@ -37,6 +37,11 @@ const ReferralPage = () => {
         if (data) {
           setReferrals(data);
           setReferralCount(data.length);
+          // Count referrals created this month
+          const now = new Date();
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+          const thisMonth = data.filter((r: any) => r.created_at >= monthStart).length;
+          setMonthlyCount(thisMonth);
           fetchReferralPoints();
         }
       });
