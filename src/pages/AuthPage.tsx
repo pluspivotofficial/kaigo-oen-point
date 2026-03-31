@@ -20,6 +20,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [isHopEmployee, setIsHopEmployee] = useState<boolean | null>(null);
+  const [careStatus, setCareStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const ref = searchParams.get("ref");
@@ -39,6 +40,10 @@ const AuthPage = () => {
       toast({ title: "ホップでの就業状況を選択してください", variant: "destructive" });
       return;
     }
+    if (!isLogin && !careStatus) {
+      toast({ title: "介護に関する状況を選択してください", variant: "destructive" });
+      return;
+    }
     setLoading(true);
 
     try {
@@ -51,7 +56,7 @@ const AuthPage = () => {
           email,
           password,
           options: {
-            data: { display_name: displayName, referral_code: referralCode || undefined, is_hop_employee: isHopEmployee },
+            data: { display_name: displayName, referral_code: referralCode || undefined, is_hop_employee: isHopEmployee, care_status: careStatus },
             emailRedirectTo: window.location.origin,
           },
         });
@@ -102,22 +107,6 @@ const AuthPage = () => {
         type: "earn",
       });
 
-      // 2nd level bonus
-      const { data: parentReferral } = await supabase
-        .from("referrals")
-        .select("*")
-        .eq("referred_user_id", referral.referrer_id)
-        .limit(1)
-        .maybeSingle();
-
-      if (parentReferral) {
-        await supabase.from("points_history").insert({
-          user_id: parentReferral.referrer_id,
-          description: `2次紹介ボーナス（${userName || "新規ユーザー"}さん登録）`,
-          points: 100,
-          type: "earn",
-        });
-      }
     } catch (err) {
       console.error("Referral processing error:", err);
     }
@@ -205,6 +194,21 @@ const AuthPage = () => {
                     <Input id="referralCode" placeholder="HOP-XXXXXX" value={referralCode} onChange={(e) => setReferralCode(e.target.value.toUpperCase())} className="font-mono" />
                     <p className="text-[10px] text-muted-foreground">紹介コードをお持ちの方は入力してください</p>
                   </div>
+
+                  {/* 介護状況確認 */}
+                  <Card className="border-primary/30 bg-primary/5">
+                    <CardContent className="p-3 space-y-2">
+                      <p className="text-sm font-medium">介護に関する状況を選択してください <span className="text-destructive">*</span></p>
+                      <div className="flex flex-col gap-2">
+                        <Button type="button" size="sm" variant={careStatus === "qualified" ? "default" : "outline"} onClick={() => setCareStatus("qualified")} className="justify-start">
+                          介護の資格を持っている
+                        </Button>
+                        <Button type="button" size="sm" variant={careStatus === "working" ? "default" : "outline"} onClick={() => setCareStatus("working")} className="justify-start">
+                          現在介護職として就労中
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   {/* ホップ就業確認 */}
                   <Card className="border-secondary/30 bg-secondary/5">

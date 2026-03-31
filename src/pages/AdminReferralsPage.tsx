@@ -58,35 +58,9 @@ const AdminReferralsPage = () => {
       type: "earn",
     });
 
-    // Check for grandparent referrer (2nd level)
-    await awardGrandparentBonus(referral.referrer_id, referral.friend_name || "紹介ユーザー", "登録");
-
     setReferrals((prev) => prev.map((r) => r.id === referral.id ? { ...r, status: "completed_registered", points_awarded: true } : r));
     toast({ title: `${referral.friend_name || "紹介ユーザー"}さんを承認し、100ptを付与しました` });
     setProcessing(null);
-  };
-
-
-  const awardGrandparentBonus = async (referrerId: string, friendName: string, action: string) => {
-    try {
-      const { data: parentReferral } = await supabase
-        .from("referrals")
-        .select("referrer_id")
-        .eq("referred_user_id", referrerId)
-        .limit(1)
-        .maybeSingle();
-
-      if (parentReferral) {
-        await supabase.from("points_history").insert({
-          user_id: parentReferral.referrer_id,
-          description: `2次紹介ボーナス（${friendName}さん${action}）`,
-          points: 100,
-          type: "earn",
-        });
-      }
-    } catch (err) {
-      console.error("Grandparent bonus error:", err);
-    }
   };
 
   const statusBadge = (status: string) => {
