@@ -93,6 +93,7 @@ const ReferralPage = () => {
 
     setReferrals((prev) => [data, ...prev]);
     setReferralCount((c) => c + 1);
+    setMonthlyCount((c) => c + 1);
     toast({
       title: "招待リンクを作成しました！",
       description: "クリップボードにコピーされました。LINEなどで共有してください。",
