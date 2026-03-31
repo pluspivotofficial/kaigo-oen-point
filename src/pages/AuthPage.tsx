@@ -20,6 +20,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
   const [isHopEmployee, setIsHopEmployee] = useState<boolean | null>(null);
+  const [careStatus, setCareStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const ref = searchParams.get("ref");
