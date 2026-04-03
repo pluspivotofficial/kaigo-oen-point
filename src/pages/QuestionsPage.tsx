@@ -21,6 +21,8 @@ interface Question {
   created_at: string;
   answer_count: number;
   is_approved: boolean;
+  is_rejected: boolean;
+  user_id: string;
 }
 
 const ANONYMOUS_NAMES = [
@@ -32,6 +34,18 @@ const ANONYMOUS_NAMES = [
 
 const getRandomAnonymousName = () =>
   ANONYMOUS_NAMES[Math.floor(Math.random() * ANONYMOUS_NAMES.length)];
+
+const getStatusBadge = (question: Question) => {
+  if (question.is_rejected) {
+    return { label: "非公開", variant: "destructive" as const };
+  }
+
+  if (!question.is_approved) {
+    return { label: "承認待ち", variant: "outline" as const };
+  }
+
+  return null;
+};
 
 const QuestionsPage = () => {
   const navigate = useNavigate();
@@ -45,103 +59,127 @@ const QuestionsPage = () => {
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
 
-  const fetchQuestions = async () => {
-    const { data } = await supabase
-      .from("questions")
-      .select("*")
-      .eq("is_approved", true)
-      .order("created_at", { ascending: false });
-    if (data) {
-      setQuestions(data as Question[]);
-      await fetchLikes(data.map((q: any) => q.id));
-    }
-    setLoading(false);
-  };
-
   const fetchLikes = async (questionIds: string[]) => {
-    if (questionIds.length === 0) return;
+    if (questionIds.length === 0) {
+      setLikeCounts({});
+      setMyLikes(new Set());
+      return;
+    }
+
     const { data: allLikes } = await supabase
       .from("question_likes")
       .select("question_id, user_id")
       .in("question_id", questionIds);
-    
+
     if (allLikes) {
       const counts: Record<string, number> = {};
       const mine = new Set<string>();
-      allLikes.forEach((l: any) => {
-        counts[l.question_id] = (counts[l.question_id] || 0) + 1;
-        if (user && l.user_id === user.id) mine.add(l.question_id);
+      allLikes.forEach((like: any) => {
+        counts[like.question_id] = (counts[like.question_id] || 0) + 1;
+        if (user && like.user_id === user.id) mine.add(like.question_id);
       });
       setLikeCounts(counts);
       setMyLikes(mine);
     }
   };
 
+  const fetchQuestions = async () => {
+    if (!user) return;
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("questions")
+      .select("*")
+      .or(`is_approved.eq.true,user_id.eq.${user.id}`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "エラー", description: error.message, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const nextQuestions = (data ?? []) as Question[];
+    setQuestions(nextQuestions);
+    await fetchLikes(nextQuestions.map((question) => question.id));
+    setLoading(false);
+  };
+
   useEffect(() => {
-    fetchQuestions();
-  }, []);
+    void fetchQuestions();
+  }, [user?.id]);
 
   const toggleLike = async (e: React.MouseEvent, questionId: string) => {
     e.stopPropagation();
     if (!user) return;
-    
+
     if (myLikes.has(questionId)) {
       await supabase.from("question_likes").delete().eq("question_id", questionId).eq("user_id", user.id);
-      setMyLikes(prev => { const n = new Set(prev); n.delete(questionId); return n; });
-      setLikeCounts(prev => ({ ...prev, [questionId]: (prev[questionId] || 1) - 1 }));
-    } else {
-      await supabase.from("question_likes").insert({ question_id: questionId, user_id: user.id });
-      setMyLikes(prev => new Set(prev).add(questionId));
-      setLikeCounts(prev => ({ ...prev, [questionId]: (prev[questionId] || 0) + 1 }));
+      setMyLikes((prev) => {
+        const next = new Set(prev);
+        next.delete(questionId);
+        return next;
+      });
+      setLikeCounts((prev) => ({ ...prev, [questionId]: Math.max((prev[questionId] || 1) - 1, 0) }));
+      return;
     }
+
+    await supabase.from("question_likes").insert({ question_id: questionId, user_id: user.id });
+    setMyLikes((prev) => new Set(prev).add(questionId));
+    setLikeCounts((prev) => ({ ...prev, [questionId]: (prev[questionId] || 0) + 1 }));
   };
 
   const handleSubmit = async () => {
     if (!user || !title.trim()) return;
     setSubmitting(true);
+
     const { error } = await supabase.from("questions").insert({
       user_id: user.id,
       title: title.trim(),
       body: body.trim(),
       anonymous_name: getRandomAnonymousName(),
     });
+
     if (error) {
       toast({ title: "エラー", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "質問を投稿しました", description: "管理者の承認後に公開されます" });
-      setTitle("");
-      setBody("");
-      setDialogOpen(false);
+      setSubmitting(false);
+      return;
     }
+
+    toast({ title: "投稿しました", description: "管理者の承認後に公開されます" });
+    setTitle("");
+    setBody("");
+    setDialogOpen(false);
+    await fetchQuestions();
     setSubmitting(false);
   };
 
   return (
     <AppLayout title="掲示板">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-3">
         <p className="text-sm text-muted-foreground">
-          みんなの質問に答えよう！
+          公開中の投稿と、あなたの投稿状況を確認できます。
         </p>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-1.5">
+            <Button size="sm" className="gap-1.5 shrink-0">
               <Plus className="h-4 w-4" />
-              質問する
+              投稿する
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>質問を投稿する</DialogTitle>
+              <DialogTitle>掲示板に投稿する</DialogTitle>
             </DialogHeader>
             <p className="text-xs text-muted-foreground">
-              投稿者名は匿名で表示されます。管理者の承認後に公開されます。
+              投稿者名は匿名で表示されます。公開前に管理者の確認があります。
             </p>
             <div className="space-y-4 mt-2">
               <div className="space-y-2">
                 <Label htmlFor="q-title">タイトル</Label>
                 <Input
                   id="q-title"
-                  placeholder="質問のタイトル"
+                  placeholder="投稿のタイトル"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={100}
@@ -151,7 +189,7 @@ const QuestionsPage = () => {
                 <Label htmlFor="q-body">詳細（任意）</Label>
                 <Textarea
                   id="q-body"
-                  placeholder="質問の詳細を書いてください..."
+                  placeholder="内容を書いてください..."
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
                   maxLength={1000}
@@ -176,53 +214,63 @@ const QuestionsPage = () => {
         <Card>
           <CardContent className="p-8 text-center">
             <MessageCircleQuestion className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-            <p className="text-muted-foreground text-sm">まだ質問がありません</p>
-            <p className="text-muted-foreground text-xs mt-1">最初の質問を投稿してみましょう！</p>
+            <p className="text-muted-foreground text-sm">まだ投稿がありません</p>
+            <p className="text-muted-foreground text-xs mt-1">最初の投稿をしてみましょう！</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {questions.map((q) => (
-            <Card
-              key={q.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate(`/questions/${q.id}`)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <MessageCircleQuestion className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm leading-snug line-clamp-2">{q.title}</p>
-                    {q.body && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{q.body}</p>
-                    )}
-                    <div className="flex items-center gap-3 mt-2">
-                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {new Date(q.created_at).toLocaleDateString("ja-JP")}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {q.anonymous_name}
-                      </span>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
-                        <MessageSquare className="h-2.5 w-2.5" />
-                        {q.answer_count}
-                      </Badge>
-                      <button
-                        className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
-                        onClick={(e) => toggleLike(e, q.id)}
-                      >
-                        <Heart className={`h-3 w-3 ${myLikes.has(q.id) ? "fill-destructive text-destructive" : ""}`} />
-                        {likeCounts[q.id] || 0}
-                      </button>
+          {questions.map((question) => {
+            const isMine = question.user_id === user?.id;
+            const status = getStatusBadge(question);
+
+            return (
+              <Card
+                key={question.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/questions/${question.id}`)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <MessageCircleQuestion className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm leading-snug line-clamp-2">{question.title}</p>
+                      {question.body && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{question.body}</p>
+                      )}
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(question.created_at).toLocaleDateString("ja-JP")}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {question.anonymous_name}
+                        </span>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-0.5">
+                          <MessageSquare className="h-2.5 w-2.5" />
+                          {question.answer_count}
+                        </Badge>
+                        <button
+                          className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                          onClick={(e) => toggleLike(e, question.id)}
+                        >
+                          <Heart className={`h-3 w-3 ${myLikes.has(question.id) ? "fill-destructive text-destructive" : ""}`} />
+                          {likeCounts[question.id] || 0}
+                        </button>
+                        {isMine && status && (
+                          <Badge variant={status.variant} className="text-[10px] px-1.5 py-0">
+                            {status.label}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </AppLayout>
