@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getRandomPraise } from "@/lib/shiftMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 type ShiftType = "early" | "day" | "late" | "night" | "off";
