@@ -112,8 +112,11 @@ const ShiftPage = () => {
   const pointsPerShift = isInCampaign ? 50 : 5;
 
   const handleShiftSelect = async (type: ShiftType) => {
-    if (!selectedDate || !user) return;
-
+    if (!selectedDate) return;
+    if (!user) {
+      toast({ title: "ログインしてください", variant: "destructive" });
+      return;
+    }
     const existing = shiftByDate[selectedDate];
 
     if (existing) {
