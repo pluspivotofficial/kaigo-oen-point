@@ -43,7 +43,7 @@ export const SignupEmail = ({
           以下のボタンをクリックして、メールアドレスを承認してください。
         </Text>
         <Button style={button} href={confirmationUrl}>
-          メールアドレスを確認する
+          メールアドレスを承認する
         </Button>
         <Text style={footer}>
           アカウントを作成した覚えがない場合は、このメールを無視してください。
