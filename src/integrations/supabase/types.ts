@@ -288,7 +288,10 @@ export type Database = {
           avatar_url: string | null
           care_experience: string | null
           care_qualifications: string | null
+          contract_end_date: string | null
           created_at: string
+          current_job: string | null
+          current_status: string | null
           date_of_birth: string | null
           dispatch_company: string | null
           display_name: string | null
@@ -296,20 +299,26 @@ export type Database = {
           facility_name: string | null
           first_launch_date: string
           full_name: string | null
+          gender: string | null
           hourly_rate: number | null
           id: string
+          phone_number: string | null
           prefecture: string | null
           preferred_shift: string | null
           updated_at: string
           user_id: string
           weekly_days: string | null
+          work_location: string | null
         }
         Insert: {
           address?: string | null
           avatar_url?: string | null
           care_experience?: string | null
           care_qualifications?: string | null
+          contract_end_date?: string | null
           created_at?: string
+          current_job?: string | null
+          current_status?: string | null
           date_of_birth?: string | null
           dispatch_company?: string | null
           display_name?: string | null
@@ -317,20 +326,26 @@ export type Database = {
           facility_name?: string | null
           first_launch_date?: string
           full_name?: string | null
+          gender?: string | null
           hourly_rate?: number | null
           id?: string
+          phone_number?: string | null
           prefecture?: string | null
           preferred_shift?: string | null
           updated_at?: string
           user_id: string
           weekly_days?: string | null
+          work_location?: string | null
         }
         Update: {
           address?: string | null
           avatar_url?: string | null
           care_experience?: string | null
           care_qualifications?: string | null
+          contract_end_date?: string | null
           created_at?: string
+          current_job?: string | null
+          current_status?: string | null
           date_of_birth?: string | null
           dispatch_company?: string | null
           display_name?: string | null
@@ -338,13 +353,16 @@ export type Database = {
           facility_name?: string | null
           first_launch_date?: string
           full_name?: string | null
+          gender?: string | null
           hourly_rate?: number | null
           id?: string
+          phone_number?: string | null
           prefecture?: string | null
           preferred_shift?: string | null
           updated_at?: string
           user_id?: string
           weekly_days?: string | null
+          work_location?: string | null
         }
         Relationships: []
       }
