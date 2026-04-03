@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -8,6 +8,7 @@ import { getRandomPraise } from "@/lib/shiftMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 type ShiftType = "early" | "day" | "late" | "night" | "off";
 
@@ -35,37 +36,61 @@ interface ShiftRow {
 
 const ShiftPage = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
-  const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  });
-  const [isInCampaign, setIsInCampaign] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("first_launch_date").eq("user_id", user.id).single()
-      .then(({ data }) => {
-        if (data?.first_launch_date) {
-          const parts = data.first_launch_date.split("-");
-          const launch = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-          setFirstLaunchDate(launch);
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const diffDays = Math.ceil((today.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
-          if (diffDays <= 7) setIsInCampaign(true);
-        }
-      });
-    supabase.from("shifts").select("*").eq("user_id", user.id).order("shift_date", { ascending: true })
-      .then(({ data }) => {
-        if (data) setSubmittedShifts(data as ShiftRow[]);
-      });
-  }, [user]);
+  // Use shared profile hook data
+  const { data: profileData } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const firstLaunchDate = useMemo(() => {
+    if (!profileData?.first_launch_date) return new Date();
+    const parts = profileData.first_launch_date.split("-");
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  }, [profileData?.first_launch_date]);
+
+  const isInCampaign = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.ceil((today.getTime() - firstLaunchDate.getTime()) / (1000 * 60 * 60 * 24)) <= 7;
+  }, [firstLaunchDate]);
+
+  // Only fetch shifts for visible month range (prev, current, next)
+  const shiftRangeStart = useMemo(() => {
+    const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    return d.toISOString().split("T")[0];
+  }, [currentMonth]);
+  const shiftRangeEnd = useMemo(() => {
+    const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 2, 0);
+    return d.toISOString().split("T")[0];
+  }, [currentMonth]);
+
+  const { data: submittedShifts = [] } = useQuery({
+    queryKey: ["shifts", user?.id, shiftRangeStart, shiftRangeEnd],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("shifts")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("shift_date", shiftRangeStart)
+        .lte("shift_date", shiftRangeEnd)
+        .order("shift_date", { ascending: true });
+      return (data ?? []) as ShiftRow[];
+    },
+    enabled: !!user,
+  });
 
   const shiftByDate = useMemo(() => {
     const map: Record<string, ShiftRow> = {};
@@ -111,6 +136,14 @@ const ShiftPage = () => {
 
   const pointsPerShift = isInCampaign ? 50 : 5;
 
+  const invalidateShifts = () => {
+    queryClient.invalidateQueries({ queryKey: ["shifts", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["totalPoints", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["monthlyPoints", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["monthlyShifts", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["pointsHistory", user?.id] });
+  };
+
   const handleShiftSelect = async (type: ShiftType) => {
     if (!selectedDate) return;
     if (!user) {
@@ -120,24 +153,21 @@ const ShiftPage = () => {
     const existing = shiftByDate[selectedDate];
 
     if (existing) {
-      // Update existing shift
       if (existing.shift_type === type) {
-        // Same type = delete
         await supabase.from("points_history").delete().eq("shift_id", existing.id);
         await supabase.from("shifts").delete().eq("id", existing.id);
-        setSubmittedShifts((prev) => prev.filter((s) => s.id !== existing.id));
+        invalidateShifts();
         toast({ title: "シフトを削除しました" });
         return;
       }
-      // Different type = update
       const config = SHIFT_CONFIG[type];
-      const { data, error } = await supabase.from("shifts").update({
+      const { error } = await supabase.from("shifts").update({
         shift_type: type,
         start_time: "00:00",
         end_time: "00:00",
         hours: 1,
         points_earned: type === "off" ? 0 : pointsPerShift,
-      }).eq("id", existing.id).select().single();
+      }).eq("id", existing.id);
 
       if (error) { toast({ title: "エラー", description: error.message, variant: "destructive" }); return; }
 
@@ -145,10 +175,9 @@ const ShiftPage = () => {
         .update({ points: type === "off" ? 0 : pointsPerShift, description: `${config.label}シフト登録` })
         .eq("shift_id", existing.id);
 
-      setSubmittedShifts((prev) => prev.map((s) => s.id === existing.id ? (data as ShiftRow) : s));
+      invalidateShifts();
       toast({ title: `${config.label}に変更しました` });
     } else {
-      // New shift
       const config = SHIFT_CONFIG[type];
       const { data, error } = await supabase.from("shifts").insert({
         user_id: user.id,
@@ -172,7 +201,7 @@ const ShiftPage = () => {
         });
       }
 
-      setSubmittedShifts((prev) => [...prev, data as ShiftRow]);
+      invalidateShifts();
       toast({
         title: getRandomPraise(),
         description: `${selectedDate} ${config.label}（+${type === "off" ? 0 : pointsPerShift}pt）`,
@@ -185,7 +214,7 @@ const ShiftPage = () => {
     if (!shift) return;
     await supabase.from("points_history").delete().eq("shift_id", shift.id);
     await supabase.from("shifts").delete().eq("id", shift.id);
-    setSubmittedShifts((prev) => prev.filter((s) => s.id !== shift.id));
+    invalidateShifts();
     toast({ title: "シフトを削除しました" });
   };
 

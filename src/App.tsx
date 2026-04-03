@@ -19,7 +19,16 @@ import AdminQuestionsPage from "./pages/AdminQuestionsPage";
 import AdminReferralsPage from "./pages/AdminReferralsPage";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5分間キャッシュ有効
+      gcTime: 10 * 60 * 1000, // 10分間GC保持
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();

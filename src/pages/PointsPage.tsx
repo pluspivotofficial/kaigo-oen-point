@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Coins, ArrowUpRight, ArrowDownRight, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,38 +5,29 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-
-interface PointsRow {
-  id: string;
-  created_at: string;
-  description: string;
-  points: number;
-  type: string;
-}
+import { useQuery } from "@tanstack/react-query";
 
 const PointsPage = () => {
   const { user } = useAuth();
-  const [history, setHistory] = useState<PointsRow[]>([]);
-  const [totalPoints, setTotalPoints] = useState(0);
 
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("points_history")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (data) {
-          setHistory(data);
-          setTotalPoints(data.reduce((sum, item) => sum + item.points, 0));
-        }
-      });
-  }, [user]);
+  const { data: history = [] } = useQuery({
+    queryKey: ["pointsHistory", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("points_history")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  const totalPoints = history.reduce((sum, item) => sum + item.points, 0);
 
   return (
     <AppLayout title="ポイント">
-      {/* Total Points */}
       <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6">
         <CardContent className="p-6 text-center">
           <p className="text-primary-foreground/70 text-sm mb-1">累計ポイント</p>
@@ -52,7 +42,6 @@ const PointsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Redeem CTA */}
       <Card className="mb-6 border-primary/20 bg-primary/5">
         <CardContent className="p-5">
           <a href="https://hop-kaigo.jp/register/seeker" target="_blank" rel="noopener noreferrer">
@@ -68,7 +57,6 @@ const PointsPage = () => {
         </CardContent>
       </Card>
 
-      {/* History */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base">ポイント履歴</CardTitle>
