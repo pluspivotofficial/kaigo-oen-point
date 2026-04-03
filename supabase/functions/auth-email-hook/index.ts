@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
-  invite: "You've been invited",
-  magiclink: 'Your login link',
-  recovery: 'Reset your password',
-  email_change: 'Confirm your new email',
-  reauthentication: 'Your verification code',
+  signup: 'メールアドレスの確認',
+  invite: '招待が届いています',
+  magiclink: 'ログインリンク',
+  recovery: 'パスワードのリセット',
+  email_change: 'メールアドレス変更の確認',
+  reauthentication: '認証コード',
 }
 
 // Template mapping
