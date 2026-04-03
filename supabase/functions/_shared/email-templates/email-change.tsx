@@ -27,32 +27,31 @@ export const EmailChangeEmail = ({
   newEmail,
   confirmationUrl,
 }: EmailChangeEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="ja" dir="ltr">
     <Head />
-    <Preview>Confirm your email change for {siteName}</Preview>
+    <Preview>{siteName} - メールアドレス変更の確認</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email change</Heading>
+        <Heading style={h1}>メールアドレス変更の確認</Heading>
         <Text style={text}>
-          You requested to change your email address for {siteName} from{' '}
+          {siteName} のメールアドレスを{' '}
           <Link href={`mailto:${email}`} style={link}>
             {email}
           </Link>{' '}
-          to{' '}
+          から{' '}
           <Link href={`mailto:${newEmail}`} style={link}>
             {newEmail}
-          </Link>
-          .
+          </Link>{' '}
+          へ変更するリクエストを受け付けました。
         </Text>
         <Text style={text}>
-          Click the button below to confirm this change:
+          以下のボタンをクリックして変更を確認してください。
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Confirm Email Change
+          メールアドレスの変更を確認する
         </Button>
         <Text style={footer}>
-          If you didn't request this change, please secure your account
-          immediately.
+          この変更をリクエストした覚えがない場合は、すぐにアカウントのセキュリティを確認してください。
         </Text>
       </Container>
     </Body>
@@ -61,26 +60,26 @@ export const EmailChangeEmail = ({
 
 export default EmailChangeEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const main = { backgroundColor: '#ffffff', fontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif" }
 const container = { padding: '20px 25px' }
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(220, 20%, 15%)',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: '#55575d',
+  color: 'hsl(220, 10%, 45%)',
   lineHeight: '1.5',
   margin: '0 0 25px',
 }
 const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: 'hsl(356, 82%, 72%)',
   color: '#ffffff',
   fontSize: '14px',
-  borderRadius: '8px',
+  borderRadius: '12px',
   padding: '12px 20px',
   textDecoration: 'none',
 }
