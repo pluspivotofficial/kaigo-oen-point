@@ -134,8 +134,8 @@ const ReferralPage = () => {
           <div className="flex items-start gap-3">
             <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
             <div>
-              <p className="font-semibold text-sm">紹介先がプロフィール入力完了で <span className="text-primary">+500pt</span></p>
-              <p className="text-xs text-muted-foreground">紹介先が写真以外の全項目を入力すると、紹介元に500pt付与されます</p>
+              <p className="font-semibold text-sm">紹介先がプロフィール⑨まで入力で <span className="text-primary">+500pt</span></p>
+              <p className="text-xs text-muted-foreground">紹介先が基本情報①〜⑤ + お仕事状況⑥〜⑨を入力すると、紹介元に500pt付与されます</p>
             </div>
           </div>
         </CardContent>
