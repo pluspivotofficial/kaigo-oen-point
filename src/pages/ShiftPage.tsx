@@ -6,26 +6,26 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Sun, Sunset, Moon, Check, Pencil, Building2, Trash2, X } from "lucide-react";
+import { Sun, Clock, Moon, Check, Pencil, Building2, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { getRandomPraise } from "@/lib/shiftMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 
-type ShiftType = "early" | "late" | "night";
+type ShiftType = "early" | "mid" | "late";
 
-const SHIFT_DEFAULTS: Record<ShiftType, { label: string; startTime: string; endTime: string; icon: React.ElementType }> = {
-  early: { label: "早番", startTime: "07:00", endTime: "16:00", icon: Sun },
-  late: { label: "遅番", startTime: "10:00", endTime: "19:00", icon: Sunset },
-  night: { label: "夜勤", startTime: "16:30", endTime: "09:30", icon: Moon },
+const SHIFT_DEFAULTS: Record<ShiftType, { label: string; startTime: string; endTime: string; icon: React.ElementType; color: string; bgColor: string; calendarColor: string }> = {
+  early: { label: "朝番", startTime: "07:00", endTime: "16:00", icon: Sun, color: "text-orange-600", bgColor: "bg-orange-100", calendarColor: "bg-orange-200 text-orange-800" },
+  mid: { label: "中番", startTime: "10:00", endTime: "19:00", icon: Clock, color: "text-emerald-600", bgColor: "bg-emerald-100", calendarColor: "bg-emerald-200 text-emerald-800" },
+  late: { label: "遅番", startTime: "16:00", endTime: "01:00", icon: Moon, color: "text-indigo-600", bgColor: "bg-indigo-100", calendarColor: "bg-indigo-200 text-indigo-800" },
 };
 
-function calcHours(start: string, end: string, isNight: boolean): number {
+function calcHours(start: string, end: string, isLate: boolean): number {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
   let diff = (eh * 60 + em) - (sh * 60 + sm);
-  if (diff <= 0 || isNight) diff += 24 * 60;
+  if (diff <= 0 || isLate) diff += 24 * 60;
   return Math.max(1, Math.round(diff / 60));
 }
 
@@ -51,8 +51,6 @@ const ShiftPage = () => {
   const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [facilityName, setFacilityName] = useState("");
-
-  // Edit mode
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -83,7 +81,7 @@ const ShiftPage = () => {
 
   const hours = useMemo(() => {
     if (!startTime || !endTime || !selectedShift) return 0;
-    return calcHours(startTime, endTime, selectedShift === "night");
+    return calcHours(startTime, endTime, selectedShift === "late");
   }, [startTime, endTime, selectedShift]);
 
   const earnedPoints = hours * pointsPerHour;
@@ -111,7 +109,6 @@ const ShiftPage = () => {
     const defaults = SHIFT_DEFAULTS[selectedShift];
 
     if (editingShiftId) {
-      // Update existing shift
       const { data: updatedShift, error } = await supabase.from("shifts").update({
         shift_type: selectedShift,
         start_time: startTime,
@@ -127,7 +124,6 @@ const ShiftPage = () => {
         return;
       }
 
-      // Update points_history for this shift
       await supabase.from("points_history")
         .update({ points: earnedPoints, description: `${defaults.label}勤務${isInCampaign ? "（キャンペーン10倍）" : ""}` })
         .eq("shift_id", editingShiftId);
@@ -135,7 +131,6 @@ const ShiftPage = () => {
       setSubmittedShifts((prev) => prev.map((s) => s.id === editingShiftId ? (updatedShift as ShiftRow) : s));
       toast({ title: "シフトを更新しました！" });
     } else {
-      // Check duplicate
       const alreadyExists = submittedShifts.some((s) => s.shift_date === dateStr);
       if (alreadyExists) {
         toast({ title: "この日はすでにシフトが登録されています", variant: "destructive" });
@@ -190,7 +185,6 @@ const ShiftPage = () => {
 
   const handleDelete = async (shiftId: string) => {
     if (!user) return;
-    // Delete points_history first, then shift
     await supabase.from("points_history").delete().eq("shift_id", shiftId);
     const { error } = await supabase.from("shifts").delete().eq("id", shiftId);
     if (error) {
@@ -202,10 +196,30 @@ const ShiftPage = () => {
     if (editingShiftId === shiftId) resetForm();
   };
 
-  const shiftDates = submittedShifts.map((s) => new Date(s.shift_date + "T00:00:00"));
+  // Build shift lookup by date for calendar coloring
+  const shiftByDate = useMemo(() => {
+    const map: Record<string, ShiftType> = {};
+    submittedShifts.forEach((s) => {
+      map[s.shift_date] = s.shift_type as ShiftType;
+    });
+    return map;
+  }, [submittedShifts]);
+
+  const earlyDates = submittedShifts.filter((s) => s.shift_type === "early").map((s) => new Date(s.shift_date + "T00:00:00"));
+  const midDates = submittedShifts.filter((s) => s.shift_type === "mid").map((s) => new Date(s.shift_date + "T00:00:00"));
+  const lateDates = submittedShifts.filter((s) => s.shift_type === "late").map((s) => new Date(s.shift_date + "T00:00:00"));
+  // Support legacy "night" type
+  const nightDates = submittedShifts.filter((s) => s.shift_type === "night").map((s) => new Date(s.shift_date + "T00:00:00"));
 
   return (
     <AppLayout title="シフト申請">
+      {/* Legend */}
+      <div className="flex items-center gap-3 mb-3 px-1">
+        <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-full bg-orange-300" /><span className="text-xs">朝番</span></div>
+        <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-full bg-emerald-300" /><span className="text-xs">中番</span></div>
+        <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-full bg-indigo-300" /><span className="text-xs">遅番</span></div>
+      </div>
+
       <Card className="mb-5">
         <CardContent className="p-3">
           <Calendar
@@ -213,8 +227,18 @@ const ShiftPage = () => {
             selected={selectedDate}
             onSelect={(date) => { setSelectedDate(date); setEditingShiftId(null); setSelectedShift(null); }}
             className="pointer-events-auto"
-            modifiers={{ booked: shiftDates }}
-            modifiersClassNames={{ booked: "bg-primary/20 text-primary font-bold rounded-full" }}
+            modifiers={{
+              early: earlyDates,
+              mid: midDates,
+              late: lateDates,
+              night: nightDates,
+            }}
+            modifiersClassNames={{
+              early: "bg-orange-200 text-orange-800 font-bold rounded-full",
+              mid: "bg-emerald-200 text-emerald-800 font-bold rounded-full",
+              late: "bg-indigo-200 text-indigo-800 font-bold rounded-full",
+              night: "bg-indigo-200 text-indigo-800 font-bold rounded-full",
+            }}
             disabled={(date) => date < firstLaunchDate}
           />
         </CardContent>
@@ -245,13 +269,8 @@ const ShiftPage = () => {
                   selectedShift === value ? "border-primary bg-accent" : "border-border hover:border-primary/30"
                 )}
               >
-                <div className={cn(
-                  "h-10 w-10 rounded-lg flex items-center justify-center",
-                  value === "early" && "bg-accent text-accent-foreground",
-                  value === "late" && "bg-primary/10 text-primary",
-                  value === "night" && "bg-reward-purple/10 text-reward-purple",
-                )}>
-                  <option.icon className="h-5 w-5" />
+                <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", option.bgColor)}>
+                  <option.icon className={cn("h-5 w-5", option.color)} />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="font-semibold text-sm">{option.label}</p>
@@ -265,19 +284,12 @@ const ShiftPage = () => {
               <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border space-y-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="facilityName" className="text-xs flex items-center gap-1">
-                    <Building2 className="h-3.5 w-3.5" />
-                    施設名
+                    <Building2 className="h-3.5 w-3.5" /> 施設名
                   </Label>
-                  <Input
-                    id="facilityName"
-                    placeholder="〇〇介護施設"
-                    value={facilityName}
-                    onChange={(e) => setFacilityName(e.target.value)}
-                  />
+                  <Input id="facilityName" placeholder="〇〇介護施設" value={facilityName} onChange={(e) => setFacilityName(e.target.value)} />
                 </div>
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Pencil className="h-4 w-4 text-muted-foreground" />
-                  時間を編集
+                  <Pencil className="h-4 w-4 text-muted-foreground" /> 時間を編集
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -323,7 +335,9 @@ const ShiftPage = () => {
                   )}
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className={cn("h-8 w-8 rounded-full flex items-center justify-center", option.bgColor)}>
+                      <Icon className={cn("h-4 w-4", option.color)} />
+                    </div>
                     <div className="min-w-0">
                       <span className="text-sm font-medium">
                         {new Date(shift.shift_date + "T00:00:00").toLocaleDateString("ja-JP", { month: "short", day: "numeric", weekday: "short" })}
@@ -335,8 +349,8 @@ const ShiftPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <Badge variant="outline" className="text-xs">{option.label}</Badge>
-                    <span className="text-xs text-muted-foreground">+{shift.hours}pt</span>
+                    <Badge className={cn("text-xs border-0", option.bgColor, option.color)}>{option.label}</Badge>
+                    <span className="text-xs text-muted-foreground">+{shift.points_earned}pt</span>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(shift)}>
                       <Pencil className="h-3 w-3" />
                     </Button>

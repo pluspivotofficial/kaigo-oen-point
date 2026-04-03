@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { User, MapPin, Briefcase, Award, Camera, Check, CalendarDays, Building2, Clock, DollarSign, CalendarCheck, Sun } from "lucide-react";
+import { User, MapPin, Briefcase, Award, Check, CalendarDays, Building2, DollarSign, Phone, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
@@ -16,70 +15,87 @@ import AppLayout from "@/components/AppLayout";
 interface ProfileData {
   display_name: string | null;
   full_name: string | null;
-  avatar_url: string | null;
   address: string | null;
   date_of_birth: string | null;
-  care_experience: string | null;
-  care_qualifications: string | null;
+  phone_number: string | null;
+  gender: string | null;
+  current_status: string | null;
+  current_job: string | null;
   employment_type: string | null;
+  care_qualifications: string | null;
+  care_experience: string | null;
   dispatch_company: string | null;
   hourly_rate: number | null;
-  weekly_days: string | null;
-  preferred_shift: string | null;
+  contract_end_date: string | null;
+  work_location: string | null;
 }
 
 const QUALIFICATION_OPTIONS = [
-  "初任者研修",
-  "実務者研修",
-  "介護福祉士",
-  "社会福祉士",
-  "ケアマネジャー",
-  "看護師",
-  "保育士",
+  "初任者研修", "実務者研修", "介護福祉士", "ケアマネ", "社会福祉士", "看護師", "保育士", "その他", "無資格",
 ];
 
 const EXPERIENCE_OPTIONS = [
-  { value: "none", label: "なし" },
-  { value: "less_than_6m", label: "半年未満" },
-  { value: "less_than_1y", label: "1年未満" },
-  { value: "less_than_3y", label: "3年未満" },
-  { value: "less_than_5y", label: "5年未満" },
+  { value: "10y_plus", label: "10年以上" },
   { value: "5y_plus", label: "5年以上" },
+  { value: "1y_plus", label: "1年以上" },
+  { value: "less_than_1y", label: "1年未満" },
+  { value: "none", label: "なし" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "working", label: "就業中" },
+  { value: "searching", label: "お探し中" },
+  { value: "other", label: "その他" },
+];
+
+const JOB_OPTIONS = [
+  { value: "care", label: "介護職" },
+  { value: "nurse", label: "看護職" },
+  { value: "nursery", label: "保育職" },
+  { value: "nurse_assistant", label: "看護助手" },
+  { value: "other_job", label: "その他職種" },
+  { value: "not_working", label: "働いてない" },
 ];
 
 const EMPLOYMENT_TYPE_OPTIONS = [
   { value: "fulltime", label: "正社員" },
-  { value: "parttime", label: "バイト" },
-  { value: "dispatch", label: "派遣" },
+  { value: "contract_parttime", label: "契約社員、アルバイト" },
+  { value: "dispatch", label: "派遣社員" },
+  { value: "spot", label: "スポットワーク" },
+  { value: "other", label: "その他" },
+  { value: "not_working", label: "働いていない" },
 ];
 
-const WEEKLY_DAYS_OPTIONS = [
-  { value: "1", label: "1日" },
-  { value: "2", label: "2日" },
-  { value: "3", label: "3日" },
-  { value: "4", label: "4日" },
-  { value: "5", label: "5日" },
+const GENDER_OPTIONS = [
+  { value: "male", label: "男性" },
+  { value: "female", label: "女性" },
+  { value: "other", label: "その他" },
 ];
 
-const PREFERRED_SHIFT_OPTIONS = [
-  { value: "early", label: "早番" },
-  { value: "mid", label: "中番" },
-  { value: "late", label: "遅番" },
-];
-
-// Fields that count toward completion
-const PROFILE_FIELDS: { key: keyof ProfileData; label: string }[] = [
-  { key: "avatar_url", label: "プロフィール写真" },
-  { key: "full_name", label: "氏名" },
+// Basic info fields (①-⑤) = 100pt each
+const BASIC_FIELDS: { key: keyof ProfileData; label: string }[] = [
+  { key: "full_name", label: "お名前（ふりがな）" },
   { key: "date_of_birth", label: "生年月日" },
+  { key: "gender", label: "性別" },
   { key: "address", label: "住所" },
-  { key: "care_experience", label: "介護経験年数" },
-  { key: "care_qualifications", label: "保有資格" },
-  { key: "employment_type", label: "就業形態" },
-  { key: "dispatch_company", label: "登録派遣会社" },
-  { key: "hourly_rate", label: "現在の時給" },
-  { key: "weekly_days", label: "週日数" },
-  { key: "preferred_shift", label: "希望働き方" },
+  { key: "phone_number", label: "電話番号" },
+];
+
+// Work info fields (⑥-⑩) = 100pt each, +500pt bonus
+const WORK_FIELDS: { key: keyof ProfileData; label: string }[] = [
+  { key: "current_status", label: "現在の状態は？" },
+  { key: "current_job", label: "現在のお仕事は？" },
+  { key: "employment_type", label: "現在の雇用形態は？" },
+  { key: "care_qualifications", label: "お持ちの資格は？" },
+  { key: "care_experience", label: "介護の経験年数は？" },
+];
+
+// Dispatch-only fields (A-D) = 100pt each, +500pt bonus
+const DISPATCH_FIELDS: { key: keyof ProfileData; label: string }[] = [
+  { key: "dispatch_company", label: "派遣会社はどこですか？" },
+  { key: "hourly_rate", label: "お時給はいくらですか？" },
+  { key: "contract_end_date", label: "契約期間はいつまでですか？" },
+  { key: "work_location", label: "現在の就業場所はどこですか？" },
 ];
 
 const isFieldFilled = (key: keyof ProfileData, value: any): boolean => {
@@ -91,17 +107,14 @@ const isFieldFilled = (key: keyof ProfileData, value: any): boolean => {
 const ProfilePage = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData>({
-    display_name: null, full_name: null, avatar_url: null, address: null,
-    date_of_birth: null, care_experience: null, care_qualifications: null,
-    employment_type: null, dispatch_company: null, hourly_rate: null,
-    weekly_days: null, preferred_shift: null,
+    display_name: null, full_name: null, address: null, date_of_birth: null,
+    phone_number: null, gender: null, current_status: null, current_job: null,
+    employment_type: null, care_qualifications: null, care_experience: null,
+    dispatch_company: null, hourly_rate: null, contract_end_date: null, work_location: null,
   });
   const [originalProfile, setOriginalProfile] = useState<ProfileData | null>(null);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [completedFields, setCompletedFields] = useState(0);
   const [qualificationOther, setQualificationOther] = useState("");
-  const [completionBonusClaimed, setCompletionBonusClaimed] = useState(false);
 
   const selectedQualifications: string[] = (() => {
     try {
@@ -110,11 +123,13 @@ const ProfilePage = () => {
     } catch { return []; }
   })();
 
+  const isDispatch = profile.employment_type === "dispatch";
+
   useEffect(() => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name, full_name, avatar_url, address, date_of_birth, care_experience, care_qualifications, employment_type, dispatch_company, hourly_rate, weekly_days, preferred_shift")
+      .select("display_name, full_name, address, date_of_birth, care_experience, care_qualifications, employment_type, dispatch_company, hourly_rate, phone_number, gender, current_status, current_job, contract_end_date, work_location")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {
@@ -122,7 +137,6 @@ const ProfilePage = () => {
           const p = data as unknown as ProfileData;
           setProfile(p);
           setOriginalProfile(p);
-          countCompleted(p);
           try {
             const quals: string[] = JSON.parse(p.care_qualifications || "[]");
             const other = quals.find((q) => !QUALIFICATION_OPTIONS.includes(q));
@@ -130,26 +144,7 @@ const ProfilePage = () => {
           } catch { /* ignore */ }
         }
       });
-
-    // Check if completion bonus already claimed
-    supabase.from("points_history")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("description", "プロフィール完成ボーナス")
-      .limit(1)
-      .then(({ data }) => {
-        if (data && data.length > 0) setCompletionBonusClaimed(true);
-      });
   }, [user]);
-
-  const countCompleted = (p: ProfileData) => {
-    let count = 0;
-    PROFILE_FIELDS.forEach((f) => {
-      if (isFieldFilled(f.key, p[f.key])) count++;
-    });
-    setCompletedFields(count);
-    return count;
-  };
 
   const toggleQualification = (qual: string, checked: boolean) => {
     let current = [...selectedQualifications];
@@ -160,49 +155,57 @@ const ProfilePage = () => {
 
   const updateOtherQualification = (text: string) => {
     setQualificationOther(text);
-    let current = selectedQualifications.filter((q) => QUALIFICATION_OPTIONS.includes(q));
+    let current = selectedQualifications.filter((q) => QUALIFICATION_OPTIONS.includes(q) && q !== "その他");
+    if (selectedQualifications.includes("その他")) current.push("その他");
     if (text.trim()) current.push(text.trim());
     setProfile((prev) => ({ ...prev, care_qualifications: JSON.stringify(current) }));
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user || !e.target.files?.[0]) return;
-    const file = e.target.files[0];
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "ファイルサイズは2MB以下にしてください", variant: "destructive" });
-      return;
-    }
-    setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `avatars/${user.id}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from("column-images").upload(path, file, { upsert: true });
-    if (uploadError) {
-      toast({ title: "アップロードに失敗しました", description: uploadError.message, variant: "destructive" });
-      setUploading(false);
-      return;
-    }
-    const { data: urlData } = supabase.storage.from("column-images").getPublicUrl(path);
-    const avatarUrl = urlData.publicUrl + `?t=${Date.now()}`;
-    setProfile((prev) => ({ ...prev, avatar_url: avatarUrl }));
-    setUploading(false);
-  };
+  const countFilledInGroup = (fields: { key: keyof ProfileData }[]) =>
+    fields.filter((f) => isFieldFilled(f.key, profile[f.key])).length;
+
+  const basicFilled = countFilledInGroup(BASIC_FIELDS);
+  const workFilled = countFilledInGroup(WORK_FIELDS);
+  const dispatchFilled = countFilledInGroup(DISPATCH_FIELDS);
+
+  const basicPoints = basicFilled * 100;
+  const workPoints = workFilled * 100 + (workFilled === WORK_FIELDS.length ? 500 : 0);
+  const dispatchPoints = isDispatch ? dispatchFilled * 100 + (dispatchFilled === DISPATCH_FIELDS.length ? 500 : 0) : 0;
+  const totalPossiblePoints = 500 + 1000 + (isDispatch ? 900 : 0);
 
   const handleSave = async () => {
     if (!user || !originalProfile) return;
     setSaving(true);
 
+    // Calculate newly filled fields and points
     let newPoints = 0;
-    PROFILE_FIELDS.forEach((f) => {
+    const allFields = [...BASIC_FIELDS, ...WORK_FIELDS, ...(isDispatch ? DISPATCH_FIELDS : [])];
+    allFields.forEach((f) => {
       const wasEmpty = !isFieldFilled(f.key, originalProfile[f.key]);
       const nowFilled = isFieldFilled(f.key, profile[f.key]);
-      if (wasEmpty && nowFilled) newPoints += 5;
+      if (wasEmpty && nowFilled) newPoints += 100;
     });
+
+    // Check work section bonus
+    const origWorkFilled = WORK_FIELDS.filter((f) => isFieldFilled(f.key, originalProfile[f.key])).length;
+    const newWorkFilled = countFilledInGroup(WORK_FIELDS);
+    if (origWorkFilled < WORK_FIELDS.length && newWorkFilled === WORK_FIELDS.length) {
+      newPoints += 500;
+    }
+
+    // Check dispatch section bonus
+    if (isDispatch) {
+      const origDispatchFilled = DISPATCH_FIELDS.filter((f) => isFieldFilled(f.key, originalProfile[f.key])).length;
+      const newDispatchFilled = countFilledInGroup(DISPATCH_FIELDS);
+      if (origDispatchFilled < DISPATCH_FIELDS.length && newDispatchFilled === DISPATCH_FIELDS.length) {
+        newPoints += 500;
+      }
+    }
 
     const { error } = await supabase
       .from("profiles")
       .update({
         full_name: profile.full_name,
-        avatar_url: profile.avatar_url,
         address: profile.address,
         date_of_birth: profile.date_of_birth,
         care_experience: profile.care_experience,
@@ -210,8 +213,12 @@ const ProfilePage = () => {
         employment_type: profile.employment_type,
         dispatch_company: profile.dispatch_company,
         hourly_rate: profile.hourly_rate,
-        weekly_days: profile.weekly_days,
-        preferred_shift: profile.preferred_shift,
+        phone_number: profile.phone_number,
+        gender: profile.gender,
+        current_status: profile.current_status,
+        current_job: profile.current_job,
+        contract_end_date: profile.contract_end_date,
+        work_location: profile.work_location,
       } as any)
       .eq("user_id", user.id);
 
@@ -224,51 +231,41 @@ const ProfilePage = () => {
     if (newPoints > 0) {
       await supabase.from("points_history").insert({
         user_id: user.id,
-        description: `プロフィール入力ボーナス（${newPoints / 5}項目）`,
+        description: `プロフィール入力ボーナス（+${newPoints}pt）`,
         points: newPoints,
         type: "earn",
       });
     }
 
-    // Check if all fields are now filled → award 500pt completion bonus
-    const updatedCount = countCompleted(profile);
-    if (updatedCount === PROFILE_FIELDS.length && !completionBonusClaimed) {
-      await supabase.from("points_history").insert({
-        user_id: user.id,
-        description: "プロフィール完成ボーナス",
-        points: 500,
-        type: "earn",
-      });
-      setCompletionBonusClaimed(true);
-      newPoints += 500;
-    }
-
-    // Check if all non-photo fields filled → award 500pt to referrer
-    const nonPhotoFields = PROFILE_FIELDS.filter(f => f.key !== "avatar_url");
-    const nonPhotoComplete = nonPhotoFields.every(f => isFieldFilled(f.key, profile[f.key]));
-    if (nonPhotoComplete) {
-      // Check if this user was referred
-      const { data: refData } = await supabase
-        .from("referrals")
-        .select("id, referrer_id")
-        .eq("referred_user_id", user.id)
-        .limit(1);
-      if (refData && refData.length > 0) {
-        const referral = refData[0];
-        // Check if bonus already awarded
-        const { data: existingBonus } = await supabase
-          .from("points_history")
-          .select("id")
-          .eq("user_id", referral.referrer_id)
-          .eq("description", `紹介先プロフィール完成ボーナス（${user.id}）`)
+    // Check if ⑨ (care_qualifications) is filled → award referrer 500pt
+    const qualNowFilled = isFieldFilled("care_qualifications", profile.care_qualifications);
+    const qualWasFilled = isFieldFilled("care_qualifications", originalProfile.care_qualifications);
+    if (qualNowFilled && !qualWasFilled) {
+      // Check all fields up to ⑨
+      const fieldsUpTo9 = [...BASIC_FIELDS, ...WORK_FIELDS.slice(0, 4)]; // up to care_qualifications
+      const allUpTo9Filled = fieldsUpTo9.every((f) => isFieldFilled(f.key, profile[f.key]));
+      if (allUpTo9Filled) {
+        const { data: refData } = await supabase
+          .from("referrals")
+          .select("id, referrer_id")
+          .eq("referred_user_id", user.id)
           .limit(1);
-        if (!existingBonus || existingBonus.length === 0) {
-          await supabase.from("points_history").insert({
-            user_id: referral.referrer_id,
-            description: `紹介先プロフィール完成ボーナス（${user.id}）`,
-            points: 500,
-            type: "earn",
-          });
+        if (refData && refData.length > 0) {
+          const referral = refData[0];
+          const { data: existingBonus } = await supabase
+            .from("points_history")
+            .select("id")
+            .eq("user_id", referral.referrer_id)
+            .eq("description", `紹介先プロフィール完成ボーナス（${user.id}）`)
+            .limit(1);
+          if (!existingBonus || existingBonus.length === 0) {
+            await supabase.from("points_history").insert({
+              user_id: referral.referrer_id,
+              description: `紹介先プロフィール完成ボーナス（${user.id}）`,
+              points: 500,
+              type: "earn",
+            });
+          }
         }
       }
     }
@@ -281,182 +278,164 @@ const ProfilePage = () => {
     });
   };
 
-  const totalPossible = PROFILE_FIELDS.length;
+  const renderFieldCheck = (key: keyof ProfileData) => {
+    if (isFieldFilled(key, profile[key])) return <Check className="h-3.5 w-3.5 text-primary" />;
+    return null;
+  };
 
   return (
     <AppLayout title="プロフィール">
-      {/* Completion Progress */}
+      {/* Progress Overview */}
       <Card className="mb-5">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">入力状況</span>
-            <Badge variant={completedFields === totalPossible ? "default" : "secondary"} className="text-xs">
-              {completedFields}/{totalPossible} 完了
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">基本情報</span>
+            <Badge variant={basicFilled === BASIC_FIELDS.length ? "default" : "secondary"} className="text-xs">
+              {basicFilled}/{BASIC_FIELDS.length} 完了 (+{basicPoints}pt)
             </Badge>
           </div>
           <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${(completedFields / totalPossible) * 100}%` }}
-            />
+            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(basicFilled / BASIC_FIELDS.length) * 100}%` }} />
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            各項目を入力すると1項目につき <span className="font-semibold text-primary">5ポイント</span> 獲得！
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">お仕事状況</span>
+            <Badge variant={workFilled === WORK_FIELDS.length ? "default" : "secondary"} className="text-xs">
+              {workFilled}/{WORK_FIELDS.length} 完了 {workFilled === WORK_FIELDS.length && "+500pt🎉"}
+            </Badge>
+          </div>
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-secondary rounded-full transition-all" style={{ width: `${(workFilled / WORK_FIELDS.length) * 100}%` }} />
+          </div>
+
+          {isDispatch && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">派遣社員限定</span>
+                <Badge variant={dispatchFilled === DISPATCH_FIELDS.length ? "default" : "secondary"} className="text-xs">
+                  {dispatchFilled}/{DISPATCH_FIELDS.length} 完了 {dispatchFilled === DISPATCH_FIELDS.length && "+500pt🎉"}
+                </Badge>
+              </div>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-reward-purple rounded-full transition-all" style={{ width: `${(dispatchFilled / DISPATCH_FIELDS.length) * 100}%` }} />
+              </div>
+            </>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            各項目 <span className="font-semibold text-primary">100pt</span>、セクション完了で <span className="font-semibold text-primary">+500ptボーナス</span>
           </p>
-          {completedFields === totalPossible && completionBonusClaimed && (
-            <p className="text-xs text-primary font-semibold mt-1">✅ プロフィール完成ボーナス +500pt 獲得済み</p>
-          )}
-          {completedFields < totalPossible && (
-            <p className="text-xs text-primary font-semibold mt-1">🎯 全項目入力で追加 500ポイント ボーナス！</p>
-          )}
         </CardContent>
       </Card>
 
-      {/* Avatar */}
+      {/* Basic Info Section */}
       <Card className="mb-5">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Camera className="h-4 w-4" />
-            プロフィール写真
-            {profile.avatar_url && <Check className="h-4 w-4 text-primary" />}
+            <User className="h-4 w-4" /> 基本情報
+            <Badge variant="outline" className="text-[10px]">各100pt</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={profile.avatar_url || undefined} />
-            <AvatarFallback className="text-2xl bg-muted">
-              <User className="h-8 w-8" />
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <label htmlFor="avatar-upload">
-              <Button variant="outline" size="sm" asChild disabled={uploading}>
-                <span>{uploading ? "アップロード中..." : "写真を変更"}</span>
-              </Button>
-            </label>
-            <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-            <p className="text-xs text-muted-foreground mt-1">2MB以下のJPG/PNG</p>
+        <CardContent className="space-y-4">
+          {/* ① お名前（ふりがな） */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              ① お名前（ふりがな） {renderFieldCheck("full_name")}
+            </Label>
+            <Input placeholder="やまだ たろう" value={profile.full_name || ""} onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))} />
+          </div>
+
+          {/* ② 生年月日 */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5" /> ② 生年月日 {renderFieldCheck("date_of_birth")}
+            </Label>
+            <Input type="date" value={profile.date_of_birth || ""} onChange={(e) => setProfile((p) => ({ ...p, date_of_birth: e.target.value }))} />
+          </div>
+
+          {/* ③ 性別 */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              <Heart className="h-3.5 w-3.5" /> ③ 性別 {renderFieldCheck("gender")}
+            </Label>
+            <Select value={profile.gender || ""} onValueChange={(v) => setProfile((p) => ({ ...p, gender: v }))}>
+              <SelectTrigger><SelectValue placeholder="選択してください" /></SelectTrigger>
+              <SelectContent>
+                {GENDER_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* ④ 住所 */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" /> ④ 住所 {renderFieldCheck("address")}
+            </Label>
+            <Input placeholder="東京都渋谷区..." value={profile.address || ""} onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))} />
+          </div>
+
+          {/* ⑤ 電話番号 */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              <Phone className="h-3.5 w-3.5" /> ⑤ 電話番号 {renderFieldCheck("phone_number")}
+            </Label>
+            <Input type="tel" placeholder="090-1234-5678" value={profile.phone_number || ""} onChange={(e) => setProfile((p) => ({ ...p, phone_number: e.target.value }))} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Form Fields */}
+      {/* Work Status Section */}
       <Card className="mb-5">
-        <CardContent className="p-4 space-y-4">
-          {/* 氏名 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="full_name" className="text-sm flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5" /> 氏名
-              {profile.full_name && profile.full_name.trim() !== "" && <Check className="h-3.5 w-3.5 text-primary" />}
-            </Label>
-            <Input id="full_name" placeholder="山田 太郎" value={profile.full_name || ""} onChange={(e) => setProfile((p) => ({ ...p, full_name: e.target.value }))} />
-          </div>
-
-          {/* 生年月日 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="date_of_birth" className="text-sm flex items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5" /> 生年月日
-              {profile.date_of_birth && profile.date_of_birth.trim() !== "" && <Check className="h-3.5 w-3.5 text-primary" />}
-            </Label>
-            <Input id="date_of_birth" type="date" value={profile.date_of_birth || ""} onChange={(e) => setProfile((p) => ({ ...p, date_of_birth: e.target.value }))} />
-          </div>
-
-          {/* 住所 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="address" className="text-sm flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5" /> 住所
-              {profile.address && profile.address.trim() !== "" && <Check className="h-3.5 w-3.5 text-primary" />}
-            </Label>
-            <Input id="address" placeholder="東京都渋谷区..." value={profile.address || ""} onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))} />
-          </div>
-
-          {/* 就業形態 */}
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Briefcase className="h-4 w-4" /> お仕事状況
+            <Badge variant="outline" className="text-[10px]">各100pt + 完了500pt</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* ⑥ 現在の状態 */}
           <div className="space-y-1.5">
             <Label className="text-sm flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5" /> 就業形態
-              {profile.employment_type && <Check className="h-3.5 w-3.5 text-primary" />}
+              ⑥ 現在の状態は？ {renderFieldCheck("current_status")}
+            </Label>
+            <Select value={profile.current_status || ""} onValueChange={(v) => setProfile((p) => ({ ...p, current_status: v }))}>
+              <SelectTrigger><SelectValue placeholder="選択してください" /></SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* ⑦ 現在のお仕事 */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              ⑦ 現在のお仕事は？ {renderFieldCheck("current_job")}
+            </Label>
+            <Select value={profile.current_job || ""} onValueChange={(v) => setProfile((p) => ({ ...p, current_job: v }))}>
+              <SelectTrigger><SelectValue placeholder="選択してください" /></SelectTrigger>
+              <SelectContent>
+                {JOB_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* ⑧ 雇用形態 */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              <Building2 className="h-3.5 w-3.5" /> ⑧ 現在の雇用形態は？ {renderFieldCheck("employment_type")}
             </Label>
             <Select value={profile.employment_type || ""} onValueChange={(v) => setProfile((p) => ({ ...p, employment_type: v }))}>
               <SelectTrigger><SelectValue placeholder="選択してください" /></SelectTrigger>
               <SelectContent>
-                {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
+                {EMPLOYMENT_TYPE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
-          {/* 登録派遣会社 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="dispatch_company" className="text-sm flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5" /> 登録派遣会社
-              {profile.dispatch_company && profile.dispatch_company.trim() !== "" && <Check className="h-3.5 w-3.5 text-primary" />}
-            </Label>
-            <Input id="dispatch_company" placeholder="〇〇派遣会社" value={profile.dispatch_company || ""} onChange={(e) => setProfile((p) => ({ ...p, dispatch_company: e.target.value }))} />
-          </div>
-
-          {/* 現在の時給 */}
-          <div className="space-y-1.5">
-            <Label htmlFor="hourly_rate" className="text-sm flex items-center gap-1.5">
-              <DollarSign className="h-3.5 w-3.5" /> 現在の時給
-              {profile.hourly_rate && profile.hourly_rate > 0 && <Check className="h-3.5 w-3.5 text-primary" />}
-            </Label>
-            <Input id="hourly_rate" type="number" placeholder="1500" value={profile.hourly_rate || ""} onChange={(e) => setProfile((p) => ({ ...p, hourly_rate: e.target.value ? parseInt(e.target.value) : null }))} />
-          </div>
-
-          {/* 週日数 */}
+          {/* ⑨ 資格 */}
           <div className="space-y-1.5">
             <Label className="text-sm flex items-center gap-1.5">
-              <CalendarCheck className="h-3.5 w-3.5" /> 週日数
-              {profile.weekly_days && <Check className="h-3.5 w-3.5 text-primary" />}
-            </Label>
-            <Select value={profile.weekly_days || ""} onValueChange={(v) => setProfile((p) => ({ ...p, weekly_days: v }))}>
-              <SelectTrigger><SelectValue placeholder="選択してください" /></SelectTrigger>
-              <SelectContent>
-                {WEEKLY_DAYS_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 希望働き方 */}
-          <div className="space-y-1.5">
-            <Label className="text-sm flex items-center gap-1.5">
-              <Sun className="h-3.5 w-3.5" /> 希望働き方
-              {profile.preferred_shift && <Check className="h-3.5 w-3.5 text-primary" />}
-            </Label>
-            <Select value={profile.preferred_shift || ""} onValueChange={(v) => setProfile((p) => ({ ...p, preferred_shift: v }))}>
-              <SelectTrigger><SelectValue placeholder="選択してください" /></SelectTrigger>
-              <SelectContent>
-                {PREFERRED_SHIFT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 介護経験年数 */}
-          <div className="space-y-1.5">
-            <Label className="text-sm flex items-center gap-1.5">
-              <Briefcase className="h-3.5 w-3.5" /> 介護経験年数
-              {profile.care_experience && profile.care_experience.trim() !== "" && <Check className="h-3.5 w-3.5 text-primary" />}
-            </Label>
-            <Select value={profile.care_experience || ""} onValueChange={(v) => setProfile((p) => ({ ...p, care_experience: v }))}>
-              <SelectTrigger><SelectValue placeholder="選択してください" /></SelectTrigger>
-              <SelectContent>
-                {EXPERIENCE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 保有資格 */}
-          <div className="space-y-1.5">
-            <Label className="text-sm flex items-center gap-1.5">
-              <Award className="h-3.5 w-3.5" /> 保有資格
-              {selectedQualifications.length > 0 && <Check className="h-3.5 w-3.5 text-primary" />}
+              <Award className="h-3.5 w-3.5" /> ⑨ お持ちの資格は？（複数選択可）{renderFieldCheck("care_qualifications")}
             </Label>
             <div className="space-y-2 pl-1">
               {QUALIFICATION_OPTIONS.map((qual) => (
@@ -465,17 +444,64 @@ const ProfilePage = () => {
                   <label htmlFor={`qual-${qual}`} className="text-sm cursor-pointer">{qual}</label>
                 </div>
               ))}
-              <div className="flex items-center gap-2">
-                <Checkbox id="qual-other" checked={qualificationOther.trim() !== ""} onCheckedChange={(checked) => { if (!checked) updateOtherQualification(""); }} />
-                <label htmlFor="qual-other" className="text-sm cursor-pointer">その他</label>
-              </div>
-              {(qualificationOther.trim() !== "" || selectedQualifications.some((q) => !QUALIFICATION_OPTIONS.includes(q))) && (
+              {selectedQualifications.includes("その他") && (
                 <Input placeholder="資格名を入力" value={qualificationOther} onChange={(e) => updateOtherQualification(e.target.value)} className="ml-6 w-auto" />
               )}
             </div>
           </div>
+
+          {/* ⑩ 経験年数 */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              ⑩ 介護の経験年数は？ {renderFieldCheck("care_experience")}
+            </Label>
+            <Select value={profile.care_experience || ""} onValueChange={(v) => setProfile((p) => ({ ...p, care_experience: v }))}>
+              <SelectTrigger><SelectValue placeholder="選択してください" /></SelectTrigger>
+              <SelectContent>
+                {EXPERIENCE_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Dispatch Section */}
+      {isDispatch && (
+        <Card className="mb-5 border-reward-purple/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-reward-purple" /> 派遣社員限定
+              <Badge variant="outline" className="text-[10px] border-reward-purple/30 text-reward-purple">各100pt + 完了500pt</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-sm flex items-center gap-1.5">
+                A. 派遣会社はどこですか？ {renderFieldCheck("dispatch_company")}
+              </Label>
+              <Input placeholder="〇〇派遣会社" value={profile.dispatch_company || ""} onChange={(e) => setProfile((p) => ({ ...p, dispatch_company: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm flex items-center gap-1.5">
+                <DollarSign className="h-3.5 w-3.5" /> B. お時給はいくらですか？ {renderFieldCheck("hourly_rate")}
+              </Label>
+              <Input type="number" placeholder="1500" value={profile.hourly_rate || ""} onChange={(e) => setProfile((p) => ({ ...p, hourly_rate: e.target.value ? parseInt(e.target.value) : null }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm flex items-center gap-1.5">
+                <CalendarDays className="h-3.5 w-3.5" /> C. 契約期間はいつまでですか？ {renderFieldCheck("contract_end_date")}
+              </Label>
+              <Input type="date" value={profile.contract_end_date || ""} onChange={(e) => setProfile((p) => ({ ...p, contract_end_date: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" /> D. 現在の就業場所はどこですか？ {renderFieldCheck("work_location")}
+              </Label>
+              <Input placeholder="〇〇介護施設" value={profile.work_location || ""} onChange={(e) => setProfile((p) => ({ ...p, work_location: e.target.value }))} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Button onClick={handleSave} className="w-full" size="lg" disabled={saving}>
         {saving ? "保存中..." : "プロフィールを保存する"}
