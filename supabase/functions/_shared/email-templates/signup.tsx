@@ -32,7 +32,7 @@ export const SignupEmail = ({
     <Preview>{siteName} - メールアドレスの承認</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>メールアドレスの確認</Heading>
+        <Heading style={h1}>メールアドレスの承認</Heading>
         <Text style={text}>
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
