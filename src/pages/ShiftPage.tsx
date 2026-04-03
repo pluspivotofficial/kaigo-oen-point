@@ -41,7 +41,10 @@ const ShiftPage = () => {
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
-  const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(new Date());
+  const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
   const [isInCampaign, setIsInCampaign] = useState(false);
 
   useEffect(() => {
@@ -49,9 +52,12 @@ const ShiftPage = () => {
     supabase.from("profiles").select("first_launch_date").eq("user_id", user.id).single()
       .then(({ data }) => {
         if (data?.first_launch_date) {
-          const launch = new Date(data.first_launch_date);
+          const parts = data.first_launch_date.split("-");
+          const launch = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
           setFirstLaunchDate(launch);
-          const diffDays = Math.ceil((new Date().getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const diffDays = Math.ceil((today.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
           if (diffDays <= 7) setIsInCampaign(true);
         }
       });
@@ -106,8 +112,11 @@ const ShiftPage = () => {
   const pointsPerShift = isInCampaign ? 50 : 5;
 
   const handleShiftSelect = async (type: ShiftType) => {
-    if (!selectedDate || !user) return;
-
+    if (!selectedDate) return;
+    if (!user) {
+      toast({ title: "ログインしてください", variant: "destructive" });
+      return;
+    }
     const existing = shiftByDate[selectedDate];
 
     if (existing) {
@@ -226,7 +235,8 @@ const ShiftPage = () => {
               const shiftConfig = shift ? SHIFT_CONFIG[shift.shift_type as ShiftType] : null;
               const isSelected = selectedDate === cell.date;
               const dayOfWeek = new Date(cell.date + "T00:00:00").getDay();
-              const isDisabled = !cell.isCurrentMonth || new Date(cell.date + "T00:00:00") < firstLaunchDate;
+               const cellDate = new Date(cell.date + "T00:00:00");
+               const isDisabled = !cell.isCurrentMonth || cellDate.getTime() < firstLaunchDate.getTime();
 
               return (
                 <button
