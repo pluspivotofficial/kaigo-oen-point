@@ -52,9 +52,12 @@ const ShiftPage = () => {
     supabase.from("profiles").select("first_launch_date").eq("user_id", user.id).single()
       .then(({ data }) => {
         if (data?.first_launch_date) {
-          const launch = new Date(data.first_launch_date);
+          const parts = data.first_launch_date.split("-");
+          const launch = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
           setFirstLaunchDate(launch);
-          const diffDays = Math.ceil((new Date().getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const diffDays = Math.ceil((today.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
           if (diffDays <= 7) setIsInCampaign(true);
         }
       });
