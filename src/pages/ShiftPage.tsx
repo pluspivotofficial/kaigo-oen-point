@@ -41,7 +41,10 @@ const ShiftPage = () => {
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
-  const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(new Date());
+  const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
   const [isInCampaign, setIsInCampaign] = useState(false);
 
   useEffect(() => {
