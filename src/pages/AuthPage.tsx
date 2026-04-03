@@ -117,7 +117,7 @@ const AuthPage = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-5 py-8">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
-          <img src={appLogo} alt="介護職応援ポイント" className="h-20 mx-auto mb-2" />
+          <img src={appLogo} alt="介護職応援ポイント" className="h-28 mx-auto mb-2" />
           <p className="text-sm text-muted-foreground mt-1">介護派遣ポイ活アプリ</p>
         </div>
 
