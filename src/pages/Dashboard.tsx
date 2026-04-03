@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings, Trophy, CalendarCheck, Flame } from "lucide-react";
 import appLogo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
@@ -12,6 +12,8 @@ import AppLayout from "@/components/AppLayout";
 import { PREFECTURES } from "@/lib/prefectures";
 import { toast } from "@/hooks/use-toast";
 import { useLoginBonus } from "@/hooks/useLoginBonus";
+import { useProfile, useTotalPoints, useMonthlyPoints, useIsAdmin } from "@/hooks/useProfile";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ColumnPreview {
   id: string;
@@ -74,42 +76,26 @@ const MOCK_NOTICES = [
   },
 ];
 
-const ProfileCompletionBanner = ({ userId }: { userId?: string }) => {
-  const [show, setShow] = useState(false);
-  const [completed, setCompleted] = useState(0);
-  const [total, setTotal] = useState(10);
+const ProfileCompletionBanner = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
+  if (!profile) return null;
 
-  useEffect(() => {
-    if (!userId) return;
-    supabase.from("profiles")
-      .select("full_name, address, date_of_birth, phone_number, gender, current_status, current_job, employment_type, care_qualifications, care_experience, dispatch_company, hourly_rate, contract_end_date, work_location")
-      .eq("user_id", userId)
-      .single()
-      .then(({ data }) => {
-        if (!data) return;
-        const d = data as any;
-        const isDispatch = d.employment_type === "dispatch";
-        let count = 0;
-        // Basic (5) + Work (5)
-        ["full_name", "date_of_birth", "gender", "address", "phone_number", "current_status", "current_job", "employment_type", "care_qualifications", "care_experience"].forEach(k => {
-          if (d[k] && String(d[k]).trim() !== "") count++;
-        });
-        let t = 10;
-        if (isDispatch) {
-          t = 14;
-          ["dispatch_company", "contract_end_date", "work_location"].forEach(k => {
-            if (d[k] && String(d[k]).trim() !== "") count++;
-          });
-          if (d.hourly_rate && d.hourly_rate > 0) count++;
-        }
-        setTotal(t);
-        setCompleted(count);
-        if (count < t) setShow(true);
-      });
-  }, [userId]);
+  const d = profile;
+  const isDispatch = d.employment_type === "dispatch";
+  let count = 0;
+  ["full_name", "date_of_birth", "gender", "address", "phone_number", "current_status", "current_job", "employment_type", "care_qualifications", "care_experience"].forEach(k => {
+    if (d[k] && String(d[k]).trim() !== "") count++;
+  });
+  let total = 10;
+  if (isDispatch) {
+    total = 14;
+    ["dispatch_company", "contract_end_date", "work_location"].forEach(k => {
+      if (d[k] && String(d[k]).trim() !== "") count++;
+    });
+    if (d.hourly_rate && d.hourly_rate > 0) count++;
+  }
 
-  if (!show) return null;
+  if (count >= total) return null;
 
   return (
     <Card className="mb-5 border-primary/30 bg-primary/5">
@@ -119,10 +105,10 @@ const ProfileCompletionBanner = ({ userId }: { userId?: string }) => {
           <span className="font-semibold text-sm">プロフィールを完成させよう！</span>
         </div>
         <p className="text-xs text-muted-foreground mb-2">
-          全項目入力で <span className="text-primary font-bold">500ポイント</span> ボーナス！（残り{total - completed}項目）
+          全項目入力で <span className="text-primary font-bold">500ポイント</span> ボーナス！（残り{total - count}項目）
         </p>
         <div className="w-full h-2 bg-muted rounded-full overflow-hidden mb-2">
-          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(completed / total) * 100}%` }} />
+          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(count / total) * 100}%` }} />
         </div>
         <Button size="sm" variant="outline" onClick={() => navigate("/profile")} className="w-full text-xs">
           プロフィールを入力する
@@ -132,22 +118,13 @@ const ProfileCompletionBanner = ({ userId }: { userId?: string }) => {
   );
 };
 
-const CampaignBanner = ({ userId }: { userId?: string }) => {
-  const [daysLeft, setDaysLeft] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase.from("profiles").select("first_launch_date").eq("user_id", userId).single()
-      .then(({ data }) => {
-        if (!data?.first_launch_date) return;
-        const launch = new Date(data.first_launch_date);
-        const now = new Date();
-        const diffDays = Math.ceil((now.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays <= 7) setDaysLeft(7 - diffDays);
-      });
-  }, [userId]);
-
-  if (daysLeft === null || daysLeft <= 0) return null;
+const CampaignBanner = ({ profile }: { profile: any }) => {
+  if (!profile?.first_launch_date) return null;
+  const launch = new Date(profile.first_launch_date);
+  const now = new Date();
+  const diffDays = Math.ceil((now.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
+  const daysLeft = 7 - diffDays;
+  if (daysLeft <= 0) return null;
 
   return (
     <Card className="mb-5 border-secondary/30 bg-gradient-to-r from-secondary/10 to-primary/10">
@@ -167,63 +144,43 @@ const CampaignBanner = ({ userId }: { userId?: string }) => {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [monthlyPoints, setMonthlyPoints] = useState(0);
-  const [monthlyShifts, setMonthlyShifts] = useState(0);
-  const [prefecture, setPrefecture] = useState<string | null>(null);
-  const [prefectureLoaded, setPrefectureLoaded] = useState(false);
+  const queryClient = useQueryClient();
   const [savingPrefecture, setSavingPrefecture] = useState(false);
-  const [columns, setColumns] = useState<ColumnPreview[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
+
+  const { data: profile } = useProfile();
+  const { data: totalPoints = 0 } = useTotalPoints();
+  const { data: monthlyPoints = 0 } = useMonthlyPoints();
+  const { data: isAdmin = false } = useIsAdmin();
   const { streak } = useLoginBonus(user?.id);
 
-  useEffect(() => {
-    if (!user) return;
+  const prefecture = profile?.prefecture ?? null;
 
-    supabase.from("points_history").select("points").eq("user_id", user.id)
-      .then(({ data }) => {
-        if (data) setTotalPoints(data.reduce((sum, r) => sum + r.points, 0));
-      });
+  // Monthly shifts count
+  const now = new Date();
+  const monthStartLabel = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const { data: monthlyShifts = 0 } = useQuery({
+    queryKey: ["monthlyShifts", user?.id, monthStartLabel],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data } = await supabase.from("shifts").select("id").eq("user_id", user.id).gte("shift_date", monthStartLabel);
+      return data?.length ?? 0;
+    },
+    enabled: !!user,
+  });
 
-    const now = new Date();
-    const monthStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthStart = monthStartDate.toISOString();
-    const monthStartLabel = monthStartDate.toISOString().split("T")[0];
-
-    supabase.from("points_history").select("points").eq("user_id", user.id).gte("created_at", monthStart)
-      .then(({ data }) => {
-        if (data) {
-          setMonthlyPoints(data.reduce((sum, r) => sum + r.points, 0));
-        }
-      });
-
-    supabase.from("shifts").select("id").eq("user_id", user.id).gte("shift_date", monthStartLabel)
-      .then(({ data }) => {
-        if (data) {
-          setMonthlyShifts(data.length);
-        }
-      });
-
-    supabase.from("profiles").select("prefecture").eq("user_id", user.id).single()
-      .then(({ data }) => {
-        setPrefecture(data?.prefecture ?? null);
-        setPrefectureLoaded(true);
-      });
-
-    supabase.from("columns_articles")
-      .select("id, title, excerpt, thumbnail_url, category, published_at")
-      .eq("is_published", true)
-      .order("published_at", { ascending: false })
-      .limit(5)
-      .then(({ data }) => {
-        if (data) setColumns(data as ColumnPreview[]);
-      });
-
-    supabase.from("user_roles").select("role").eq("user_id", user.id)
-      .then(({ data }) => {
-        if (data?.some((r: any) => r.role === "admin")) setIsAdmin(true);
-      });
-  }, [user]);
+  // Columns
+  const { data: columns = [] } = useQuery({
+    queryKey: ["columns_preview"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("columns_articles")
+        .select("id, title, excerpt, thumbnail_url, category, published_at")
+        .eq("is_published", true)
+        .order("published_at", { ascending: false })
+        .limit(5);
+      return (data ?? []) as ColumnPreview[];
+    },
+  });
 
   const handleSavePrefecture = async (value: string) => {
     if (!user) return;
@@ -232,7 +189,7 @@ const Dashboard = () => {
     if (error) {
       toast({ title: "エラー", description: error.message, variant: "destructive" });
     } else {
-      setPrefecture(value);
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
       toast({ title: "居住地を登録しました！", description: `${value}で都道府県チャレンジに参加します` });
     }
     setSavingPrefecture(false);
@@ -240,14 +197,10 @@ const Dashboard = () => {
 
   return (
     <AppLayout title={<img src={appLogo} alt="介護職応援ポイント" className="h-14" />}>
-      {/* Profile Completion Banner */}
-      <ProfileCompletionBanner userId={user?.id} />
+      <ProfileCompletionBanner profile={profile} />
+      <CampaignBanner profile={profile} />
 
-      {/* 7-Day Campaign Banner */}
-      <CampaignBanner userId={user?.id} />
-
-      {/* Prefecture Setup Banner */}
-      {prefectureLoaded && !prefecture && (
+      {profile && !prefecture && (
         <Card className="mb-5 border-secondary/30 bg-secondary/5">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
@@ -271,14 +224,13 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Prefecture Badge (if set) */}
       {prefecture && (
         <div className="flex items-center gap-2 mb-4">
           <MapPin className="h-4 w-4 text-secondary" />
           <Badge variant="secondary" className="text-xs">{prefecture}</Badge>
           <button
             className="text-[10px] text-muted-foreground hover:text-foreground underline"
-            onClick={() => setPrefecture(null)}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ["profile", user?.id] })}
           >
             変更
           </button>
@@ -302,7 +254,7 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Quick Actions - right after points */}
+      {/* Quick Actions */}
       <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
         クイックアクション
       </h2>
@@ -418,45 +370,31 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Columns Section */}
+      {/* Latest Columns */}
       {columns.length > 0 && (
         <>
-          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-            コラム
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            コラム記事
           </h2>
           <div className="space-y-3 mb-6">
             {columns.map((col) => (
-              <Card
-                key={col.id}
-                className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/column/${col.id}`)}
-              >
-                <CardContent className="p-0">
-                  <div className="flex">
-                    {col.thumbnail_url && (
-                      <img
-                        src={col.thumbnail_url}
-                        alt=""
-                        className="h-24 w-24 object-cover shrink-0"
-                      />
+              <Card key={col.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/column/${col.id}`)}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Badge variant="outline" className="text-[10px]">
+                      {CATEGORY_LABELS[col.category] || col.category}
+                    </Badge>
+                    {col.published_at && (
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(col.published_at).toLocaleDateString("ja-JP")}
+                      </span>
                     )}
-                    <div className="p-3 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          {CATEGORY_LABELS[col.category] || col.category}
-                        </Badge>
-                        {col.published_at && (
-                          <span className="text-[10px] text-muted-foreground">
-                            {new Date(col.published_at).toLocaleDateString("ja-JP")}
-                          </span>
-                        )}
-                      </div>
-                      <p className="font-semibold text-sm leading-snug line-clamp-2">{col.title}</p>
-                      {col.excerpt && (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{col.excerpt}</p>
-                      )}
-                    </div>
                   </div>
+                  <p className="text-sm font-semibold leading-snug line-clamp-2">{col.title}</p>
+                  {col.excerpt && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{col.excerpt}</p>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -464,48 +402,39 @@ const Dashboard = () => {
         </>
       )}
 
-      {/* Admin & Settings */}
-      <div className="space-y-3">
-        {isAdmin && (
-          <>
-            <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-              管理者メニュー
-            </h2>
-            <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/columns")}>
-              <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
-                <Settings className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">コラム管理</p>
-                <p className="text-xs text-muted-foreground">コラムの作成・編集・公開</p>
-              </div>
+      {/* Admin Menu */}
+      {isAdmin && (
+        <>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            管理メニュー
+          </h2>
+          <div className="space-y-2 mb-6">
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/admin/columns")}>
+              <FileText className="h-4 w-4" />
+              コラム管理
             </Button>
-            <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/questions")}>
-              <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">掲示板管理</p>
-                <p className="text-xs text-muted-foreground">投稿の承認・却下</p>
-              </div>
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/admin/questions")}>
+              <FileText className="h-4 w-4" />
+              掲示板管理
             </Button>
-            <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/admin/referrals")}>
-              <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center">
-                <Users className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">紹介管理</p>
-                <p className="text-xs text-muted-foreground">紹介ステータスとポイント付与</p>
-              </div>
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/admin/referrals")}>
+              <Users className="h-4 w-4" />
+              紹介管理
             </Button>
-          </>
-        )}
+          </div>
+        </>
+      )}
 
-        <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-muted-foreground" onClick={signOut}>
-          <LogOut className="h-4 w-4" />
-          ログアウト
-        </Button>
-      </div>
+      {/* Logout */}
+      <Button
+        variant="ghost"
+        className="w-full text-muted-foreground hover:text-destructive gap-2"
+        onClick={signOut}
+      >
+        <LogOut className="h-4 w-4" />
+        ログアウト
+      </Button>
     </AppLayout>
   );
 };
