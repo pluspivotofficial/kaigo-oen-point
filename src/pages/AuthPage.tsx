@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
-import { Coins, LogIn, UserPlus, Gift, Clock, ExternalLink, Ticket, AlertTriangle } from "lucide-react";
+import { LogIn, UserPlus, Gift, Clock, ExternalLink, Ticket, AlertTriangle } from "lucide-react";
+import appLogo from "@/assets/logo.png";
 
 const AuthPage = () => {
   const navigate = useNavigate();
