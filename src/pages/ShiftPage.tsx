@@ -1,33 +1,26 @@
 import { useState, useMemo, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Sun, Clock, Moon, Check, Pencil, Building2, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { getRandomPraise } from "@/lib/shiftMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
-type ShiftType = "early" | "mid" | "late";
+type ShiftType = "early" | "day" | "late" | "night" | "off";
 
-const SHIFT_DEFAULTS: Record<ShiftType, { label: string; startTime: string; endTime: string; icon: React.ElementType; color: string; bgColor: string; calendarColor: string }> = {
-  early: { label: "朝番", startTime: "07:00", endTime: "16:00", icon: Sun, color: "text-orange-600", bgColor: "bg-orange-100", calendarColor: "bg-orange-200 text-orange-800" },
-  mid: { label: "中番", startTime: "10:00", endTime: "19:00", icon: Clock, color: "text-emerald-600", bgColor: "bg-emerald-100", calendarColor: "bg-emerald-200 text-emerald-800" },
-  late: { label: "遅番", startTime: "16:00", endTime: "01:00", icon: Moon, color: "text-indigo-600", bgColor: "bg-indigo-100", calendarColor: "bg-indigo-200 text-indigo-800" },
+const SHIFT_CONFIG: Record<ShiftType, { label: string; color: string; bg: string; border: string; textColor: string }> = {
+  early: { label: "早番", color: "text-green-700", bg: "bg-green-50", border: "border-green-500", textColor: "text-green-600" },
+  day: { label: "日勤", color: "text-red-600", bg: "bg-red-50", border: "border-red-400", textColor: "text-red-500" },
+  late: { label: "遅番", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-500", textColor: "text-amber-600" },
+  night: { label: "夜勤", color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-500", textColor: "text-blue-600" },
+  off: { label: "休み", color: "text-pink-600", bg: "bg-pink-50", border: "border-pink-400", textColor: "text-pink-500" },
 };
 
-function calcHours(start: string, end: string, isLate: boolean): number {
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  let diff = (eh * 60 + em) - (sh * 60 + sm);
-  if (diff <= 0 || isLate) diff += 24 * 60;
-  return Math.max(1, Math.round(diff / 60));
-}
+const DAYS_JP = ["日", "月", "火", "水", "木", "金", "土"];
+const DAY_COLORS = ["text-red-500", "text-foreground", "text-foreground", "text-foreground", "text-foreground", "text-foreground", "text-blue-500"];
 
 interface ShiftRow {
   id: string;
@@ -42,16 +35,14 @@ interface ShiftRow {
 
 const ShiftPage = () => {
   const { user } = useAuth();
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
   const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(new Date());
   const [isInCampaign, setIsInCampaign] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedShift, setSelectedShift] = useState<ShiftType | null>(null);
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
-  const [submitting, setSubmitting] = useState(false);
-  const [facilityName, setFacilityName] = useState("");
-  const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -70,300 +61,257 @@ const ShiftPage = () => {
       });
   }, [user]);
 
-  const handleSelectShift = (type: ShiftType) => {
-    setSelectedShift(type);
-    const defaults = SHIFT_DEFAULTS[type];
-    setStartTime(defaults.startTime);
-    setEndTime(defaults.endTime);
-  };
-
-  const pointsPerHour = isInCampaign ? 10 : 1;
-
-  const hours = useMemo(() => {
-    if (!startTime || !endTime || !selectedShift) return 0;
-    return calcHours(startTime, endTime, selectedShift === "late");
-  }, [startTime, endTime, selectedShift]);
-
-  const earnedPoints = hours * pointsPerHour;
-
-  const resetForm = () => {
-    setSelectedDate(undefined);
-    setSelectedShift(null);
-    setStartTime("");
-    setEndTime("");
-    setFacilityName("");
-    setEditingShiftId(null);
-  };
-
-  const handleSubmit = async () => {
-    if (!selectedDate || !selectedShift || !user) {
-      toast({ title: "日付とシフトタイプを選択してください", variant: "destructive" });
-      return;
-    }
-
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-    const day = String(selectedDate.getDate()).padStart(2, "0");
-    const dateStr = `${year}-${month}-${day}`;
-    setSubmitting(true);
-    const defaults = SHIFT_DEFAULTS[selectedShift];
-
-    if (editingShiftId) {
-      const { data: updatedShift, error } = await supabase.from("shifts").update({
-        shift_type: selectedShift,
-        start_time: startTime,
-        end_time: endTime,
-        hours,
-        points_earned: earnedPoints,
-        facility_name: facilityName || null,
-      }).eq("id", editingShiftId).select().single();
-
-      if (error) {
-        toast({ title: "エラーが発生しました", description: error.message, variant: "destructive" });
-        setSubmitting(false);
-        return;
-      }
-
-      await supabase.from("points_history")
-        .update({ points: earnedPoints, description: `${defaults.label}勤務${isInCampaign ? "（キャンペーン10倍）" : ""}` })
-        .eq("shift_id", editingShiftId);
-
-      setSubmittedShifts((prev) => prev.map((s) => s.id === editingShiftId ? (updatedShift as ShiftRow) : s));
-      toast({ title: "シフトを更新しました！" });
-    } else {
-      const alreadyExists = submittedShifts.some((s) => s.shift_date === dateStr);
-      if (alreadyExists) {
-        toast({ title: "この日はすでにシフトが登録されています", variant: "destructive" });
-        setSubmitting(false);
-        return;
-      }
-
-      const { data: shiftData, error: shiftError } = await supabase.from("shifts").insert({
-        user_id: user.id,
-        shift_date: dateStr,
-        shift_type: selectedShift,
-        start_time: startTime,
-        end_time: endTime,
-        hours,
-        points_earned: earnedPoints,
-        facility_name: facilityName || null,
-      }).select().single();
-
-      if (shiftError) {
-        toast({ title: "エラーが発生しました", description: shiftError.message, variant: "destructive" });
-        setSubmitting(false);
-        return;
-      }
-
-      await supabase.from("points_history").insert({
-        user_id: user.id,
-        description: `${defaults.label}勤務${isInCampaign ? "（キャンペーン10倍）" : ""}`,
-        points: earnedPoints,
-        type: "earn",
-        shift_id: shiftData.id,
-      });
-
-      setSubmittedShifts((prev) => [...prev, shiftData as ShiftRow]);
-      toast({
-        title: getRandomPraise(),
-        description: `${selectedDate.toLocaleDateString("ja-JP")} ${defaults.label} ${startTime}〜${endTime}（+${earnedPoints}ポイント）`,
-      });
-    }
-
-    resetForm();
-    setSubmitting(false);
-  };
-
-  const handleEdit = (shift: ShiftRow) => {
-    setEditingShiftId(shift.id);
-    setSelectedDate(new Date(shift.shift_date + "T00:00:00"));
-    setSelectedShift(shift.shift_type as ShiftType);
-    setStartTime(shift.start_time.slice(0, 5));
-    setEndTime(shift.end_time.slice(0, 5));
-    setFacilityName(shift.facility_name || "");
-  };
-
-  const handleDelete = async (shiftId: string) => {
-    if (!user) return;
-    await supabase.from("points_history").delete().eq("shift_id", shiftId);
-    const { error } = await supabase.from("shifts").delete().eq("id", shiftId);
-    if (error) {
-      toast({ title: "削除に失敗しました", description: error.message, variant: "destructive" });
-      return;
-    }
-    setSubmittedShifts((prev) => prev.filter((s) => s.id !== shiftId));
-    toast({ title: "シフトを削除しました" });
-    if (editingShiftId === shiftId) resetForm();
-  };
-
-  // Build shift lookup by date for calendar coloring
   const shiftByDate = useMemo(() => {
-    const map: Record<string, ShiftType> = {};
-    submittedShifts.forEach((s) => {
-      map[s.shift_date] = s.shift_type as ShiftType;
-    });
+    const map: Record<string, ShiftRow> = {};
+    submittedShifts.forEach((s) => { map[s.shift_date] = s; });
     return map;
   }, [submittedShifts]);
 
-  const earlyDates = submittedShifts.filter((s) => s.shift_type === "early").map((s) => new Date(s.shift_date + "T00:00:00"));
-  const midDates = submittedShifts.filter((s) => s.shift_type === "mid").map((s) => new Date(s.shift_date + "T00:00:00"));
-  const lateDates = submittedShifts.filter((s) => s.shift_type === "late").map((s) => new Date(s.shift_date + "T00:00:00"));
-  // Support legacy "night" type
-  const nightDates = submittedShifts.filter((s) => s.shift_type === "night").map((s) => new Date(s.shift_date + "T00:00:00"));
+  // Build calendar grid
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevDays = new Date(year, month, 0).getDate();
+
+    const days: { date: string; day: number; isCurrentMonth: boolean }[] = [];
+
+    // Previous month padding
+    for (let i = firstDay - 1; i >= 0; i--) {
+      const d = prevDays - i;
+      const m = month === 0 ? 12 : month;
+      const y = month === 0 ? year - 1 : year;
+      days.push({ date: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, day: d, isCurrentMonth: false });
+    }
+
+    // Current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      days.push({ date: `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`, day: d, isCurrentMonth: true });
+    }
+
+    // Next month padding
+    const remaining = 7 - (days.length % 7);
+    if (remaining < 7) {
+      for (let d = 1; d <= remaining; d++) {
+        const m = month + 2 > 12 ? 1 : month + 2;
+        const y = month + 2 > 12 ? year + 1 : year;
+        days.push({ date: `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`, day: d, isCurrentMonth: false });
+      }
+    }
+
+    return days;
+  }, [currentMonth]);
+
+  const pointsPerShift = isInCampaign ? 50 : 5;
+
+  const handleShiftSelect = async (type: ShiftType) => {
+    if (!selectedDate || !user) return;
+
+    const existing = shiftByDate[selectedDate];
+
+    if (existing) {
+      // Update existing shift
+      if (existing.shift_type === type) {
+        // Same type = delete
+        await supabase.from("points_history").delete().eq("shift_id", existing.id);
+        await supabase.from("shifts").delete().eq("id", existing.id);
+        setSubmittedShifts((prev) => prev.filter((s) => s.id !== existing.id));
+        toast({ title: "シフトを削除しました" });
+        return;
+      }
+      // Different type = update
+      const config = SHIFT_CONFIG[type];
+      const { data, error } = await supabase.from("shifts").update({
+        shift_type: type,
+        start_time: "00:00",
+        end_time: "00:00",
+        hours: 1,
+        points_earned: type === "off" ? 0 : pointsPerShift,
+      }).eq("id", existing.id).select().single();
+
+      if (error) { toast({ title: "エラー", description: error.message, variant: "destructive" }); return; }
+
+      await supabase.from("points_history")
+        .update({ points: type === "off" ? 0 : pointsPerShift, description: `${config.label}シフト登録` })
+        .eq("shift_id", existing.id);
+
+      setSubmittedShifts((prev) => prev.map((s) => s.id === existing.id ? (data as ShiftRow) : s));
+      toast({ title: `${config.label}に変更しました` });
+    } else {
+      // New shift
+      const config = SHIFT_CONFIG[type];
+      const { data, error } = await supabase.from("shifts").insert({
+        user_id: user.id,
+        shift_date: selectedDate,
+        shift_type: type,
+        start_time: "00:00",
+        end_time: "00:00",
+        hours: 1,
+        points_earned: type === "off" ? 0 : pointsPerShift,
+      }).select().single();
+
+      if (error) { toast({ title: "エラー", description: error.message, variant: "destructive" }); return; }
+
+      if (type !== "off") {
+        await supabase.from("points_history").insert({
+          user_id: user.id,
+          description: `${config.label}シフト登録${isInCampaign ? "（キャンペーン10倍）" : ""}`,
+          points: pointsPerShift,
+          type: "earn",
+          shift_id: data.id,
+        });
+      }
+
+      setSubmittedShifts((prev) => [...prev, data as ShiftRow]);
+      toast({
+        title: getRandomPraise(),
+        description: `${selectedDate} ${config.label}（+${type === "off" ? 0 : pointsPerShift}pt）`,
+      });
+    }
+  };
+
+  const handleDeleteShift = async (dateStr: string) => {
+    const shift = shiftByDate[dateStr];
+    if (!shift) return;
+    await supabase.from("points_history").delete().eq("shift_id", shift.id);
+    await supabase.from("shifts").delete().eq("id", shift.id);
+    setSubmittedShifts((prev) => prev.filter((s) => s.id !== shift.id));
+    toast({ title: "シフトを削除しました" });
+  };
+
+  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  const goToday = () => {
+    const now = new Date();
+    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+  };
+
+  const selectedShiftForDate = selectedDate ? shiftByDate[selectedDate] : null;
 
   return (
-    <AppLayout title="シフト申請">
-      {/* Legend */}
-      <div className="flex items-center gap-3 mb-3 px-1">
-        <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-full bg-orange-300" /><span className="text-xs">朝番</span></div>
-        <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-full bg-emerald-300" /><span className="text-xs">中番</span></div>
-        <div className="flex items-center gap-1"><div className="h-3 w-3 rounded-full bg-indigo-300" /><span className="text-xs">遅番</span></div>
-      </div>
+    <AppLayout title="シフト登録">
+      <Card className="mb-4">
+        <CardContent className="p-0">
+          {/* Month header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-pink-100 rounded-t-lg">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">{currentMonth.getFullYear()}年</p>
+                <p className="text-lg font-bold">{currentMonth.getMonth() + 1}月</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={nextMonth}>
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" onClick={goToday} className="text-xs">今日</Button>
+          </div>
 
-      <Card className="mb-5">
-        <CardContent className="p-3">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => { setSelectedDate(date); setEditingShiftId(null); setSelectedShift(null); }}
-            className="pointer-events-auto"
-            modifiers={{
-              early: earlyDates,
-              mid: midDates,
-              late: lateDates,
-              night: nightDates,
-            }}
-            modifiersClassNames={{
-              early: "bg-orange-200 text-orange-800 font-bold rounded-full",
-              mid: "bg-emerald-200 text-emerald-800 font-bold rounded-full",
-              late: "bg-indigo-200 text-indigo-800 font-bold rounded-full",
-              night: "bg-indigo-200 text-indigo-800 font-bold rounded-full",
-            }}
-            disabled={(date) => date < firstLaunchDate}
-          />
+          {/* Day headers */}
+          <div className="grid grid-cols-7 border-b">
+            {DAYS_JP.map((d, i) => (
+              <div key={d} className={cn("text-center py-1.5 text-xs font-bold", DAY_COLORS[i])}>
+                {d}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7">
+            {calendarDays.map((cell, idx) => {
+              const shift = shiftByDate[cell.date];
+              const shiftConfig = shift ? SHIFT_CONFIG[shift.shift_type as ShiftType] : null;
+              const isSelected = selectedDate === cell.date;
+              const dayOfWeek = new Date(cell.date + "T00:00:00").getDay();
+              const isDisabled = !cell.isCurrentMonth || new Date(cell.date + "T00:00:00") < firstLaunchDate;
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => !isDisabled && setSelectedDate(cell.date)}
+                  disabled={isDisabled}
+                  className={cn(
+                    "relative flex flex-col items-center justify-start py-1 min-h-[52px] border-b border-r text-sm transition-colors",
+                    isDisabled && "opacity-30",
+                    !isDisabled && "hover:bg-accent/50",
+                    isSelected && "bg-yellow-50 ring-2 ring-inset ring-yellow-400",
+                  )}
+                >
+                  <span className={cn(
+                    "text-xs font-bold",
+                    dayOfWeek === 0 ? "text-red-500" : dayOfWeek === 6 ? "text-blue-500" : "text-foreground",
+                    !cell.isCurrentMonth && "opacity-40"
+                  )}>
+                    {cell.day}
+                  </span>
+                  {shiftConfig && (
+                    <span className={cn("text-[10px] font-bold mt-0.5", shiftConfig.textColor)}>
+                      {shiftConfig.label}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
+      {/* Shift input section */}
       {selectedDate && (
-        <Card className="mb-5">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">
-                {selectedDate.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "short" })} のシフト
-                {editingShiftId && <Badge variant="outline" className="ml-2 text-[10px]">編集中</Badge>}
-              </CardTitle>
-              {editingShiftId && (
-                <Button variant="ghost" size="sm" onClick={resetForm}>
-                  <X className="h-4 w-4" />
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-bold text-foreground">
+                {(() => {
+                  const d = new Date(selectedDate + "T00:00:00");
+                  return `${d.getMonth() + 1}/${d.getDate()}(${DAYS_JP[d.getDay()]}) のシフト入力`;
+                })()}
+              </p>
+              {selectedShiftForDate && (
+                <Button variant="ghost" size="sm" className="text-destructive text-xs h-7" onClick={() => handleDeleteShift(selectedDate)}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />削除
                 </Button>
               )}
             </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {(Object.entries(SHIFT_DEFAULTS) as [ShiftType, typeof SHIFT_DEFAULTS["early"]][]).map(([value, option]) => (
-              <button
-                key={value}
-                onClick={() => handleSelectShift(value)}
-                className={cn(
-                  "w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all",
-                  selectedShift === value ? "border-primary bg-accent" : "border-border hover:border-primary/30"
-                )}
-              >
-                <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", option.bgColor)}>
-                  <option.icon className={cn("h-5 w-5", option.color)} />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-semibold text-sm">{option.label}</p>
-                  <p className="text-xs text-muted-foreground">{option.startTime} 〜 {option.endTime}</p>
-                </div>
-                {selectedShift === value && <Check className="h-5 w-5 text-primary" />}
-              </button>
-            ))}
 
-            {selectedShift && (
-              <div className="mt-4 p-4 rounded-lg bg-muted/50 border border-border space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="facilityName" className="text-xs flex items-center gap-1">
-                    <Building2 className="h-3.5 w-3.5" /> 施設名
-                  </Label>
-                  <Input id="facilityName" placeholder="〇〇介護施設" value={facilityName} onChange={(e) => setFacilityName(e.target.value)} />
-                </div>
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Pencil className="h-4 w-4 text-muted-foreground" /> 時間を編集
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="startTime" className="text-xs">開始時間</Label>
-                    <Input id="startTime" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="endTime" className="text-xs">終了時間</Label>
-                    <Input id="endTime" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">勤務時間</span>
-                  <Badge variant="secondary" className="text-xs font-mono">{hours}時間 → +{earnedPoints} pt{isInCampaign ? " (10倍)" : ""}</Badge>
-                </div>
-              </div>
-            )}
+            <div className="grid grid-cols-5 gap-2">
+              {(Object.entries(SHIFT_CONFIG) as [ShiftType, typeof SHIFT_CONFIG["early"]][]).map(([type, config]) => {
+                const isActive = selectedShiftForDate?.shift_type === type;
+                return (
+                  <button
+                    key={type}
+                    onClick={() => handleShiftSelect(type)}
+                    className={cn(
+                      "flex items-center justify-center py-3 px-1 rounded-lg border-2 text-sm font-bold transition-all",
+                      isActive
+                        ? cn(config.bg, config.border, config.color, "ring-2 ring-offset-1", config.border.replace("border-", "ring-"))
+                        : cn("border-border", config.textColor, "hover:border-current")
+                    )}
+                  >
+                    {config.label}
+                  </button>
+                );
+              })}
+            </div>
 
-            <Button onClick={handleSubmit} className="w-full mt-4" size="lg" disabled={submitting}>
-              {submitting ? "送信中..." : editingShiftId ? "シフトを更新する" : "シフトを申請する"}
-            </Button>
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              {isInCampaign ? "🎉 キャンペーン中！1シフト +50pt" : "1シフト登録で +5pt（休みは0pt）"}
+            </p>
           </CardContent>
         </Card>
       )}
 
-      {submittedShifts.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">申請済みシフト</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {submittedShifts.map((shift) => {
-              const option = SHIFT_DEFAULTS[shift.shift_type as ShiftType];
-              if (!option) return null;
-              const Icon = option.icon;
-              const isEditing = editingShiftId === shift.id;
-              return (
-                <div
-                  key={shift.id}
-                  className={cn(
-                    "flex items-center justify-between p-3 rounded-lg",
-                    isEditing ? "bg-accent border border-primary/30" : "bg-muted"
-                  )}
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className={cn("h-8 w-8 rounded-full flex items-center justify-center", option.bgColor)}>
-                      <Icon className={cn("h-4 w-4", option.color)} />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium">
-                        {new Date(shift.shift_date + "T00:00:00").toLocaleDateString("ja-JP", { month: "short", day: "numeric", weekday: "short" })}
-                      </span>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {shift.start_time.slice(0, 5)}〜{shift.end_time.slice(0, 5)}
-                        {shift.facility_name && ` @ ${shift.facility_name}`}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Badge className={cn("text-xs border-0", option.bgColor, option.color)}>{option.label}</Badge>
-                    <span className="text-xs text-muted-foreground">+{shift.points_earned}pt</span>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(shift)}>
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(shift.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      )}
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-3 px-1 text-xs text-muted-foreground">
+        {(Object.entries(SHIFT_CONFIG) as [ShiftType, typeof SHIFT_CONFIG["early"]][]).map(([, config]) => (
+          <div key={config.label} className="flex items-center gap-1">
+            <span className={cn("font-bold", config.textColor)}>{config.label}</span>
+          </div>
+        ))}
+      </div>
     </AppLayout>
   );
 };
