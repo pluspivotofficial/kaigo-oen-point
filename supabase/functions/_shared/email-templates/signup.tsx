@@ -40,11 +40,7 @@ export const SignupEmail = ({
           にご登録いただきありがとうございます！
         </Text>
         <Text style={text}>
-          以下のボタンをクリックして、メールアドレス（
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ）を確認してください。
+          以下のボタンをクリックして、メールアドレスを承認してください。
         </Text>
         <Button style={button} href={confirmationUrl}>
           メールアドレスを確認する
