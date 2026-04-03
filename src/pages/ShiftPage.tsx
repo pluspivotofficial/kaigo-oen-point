@@ -136,6 +136,14 @@ const ShiftPage = () => {
 
   const pointsPerShift = isInCampaign ? 50 : 5;
 
+  const invalidateShifts = () => {
+    queryClient.invalidateQueries({ queryKey: ["shifts", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["totalPoints", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["monthlyPoints", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["monthlyShifts", user?.id] });
+    queryClient.invalidateQueries({ queryKey: ["pointsHistory", user?.id] });
+  };
+
   const handleShiftSelect = async (type: ShiftType) => {
     if (!selectedDate) return;
     if (!user) {
@@ -145,24 +153,21 @@ const ShiftPage = () => {
     const existing = shiftByDate[selectedDate];
 
     if (existing) {
-      // Update existing shift
       if (existing.shift_type === type) {
-        // Same type = delete
         await supabase.from("points_history").delete().eq("shift_id", existing.id);
         await supabase.from("shifts").delete().eq("id", existing.id);
-        setSubmittedShifts((prev) => prev.filter((s) => s.id !== existing.id));
+        invalidateShifts();
         toast({ title: "シフトを削除しました" });
         return;
       }
-      // Different type = update
       const config = SHIFT_CONFIG[type];
-      const { data, error } = await supabase.from("shifts").update({
+      const { error } = await supabase.from("shifts").update({
         shift_type: type,
         start_time: "00:00",
         end_time: "00:00",
         hours: 1,
         points_earned: type === "off" ? 0 : pointsPerShift,
-      }).eq("id", existing.id).select().single();
+      }).eq("id", existing.id);
 
       if (error) { toast({ title: "エラー", description: error.message, variant: "destructive" }); return; }
 
@@ -170,10 +175,9 @@ const ShiftPage = () => {
         .update({ points: type === "off" ? 0 : pointsPerShift, description: `${config.label}シフト登録` })
         .eq("shift_id", existing.id);
 
-      setSubmittedShifts((prev) => prev.map((s) => s.id === existing.id ? (data as ShiftRow) : s));
+      invalidateShifts();
       toast({ title: `${config.label}に変更しました` });
     } else {
-      // New shift
       const config = SHIFT_CONFIG[type];
       const { data, error } = await supabase.from("shifts").insert({
         user_id: user.id,
@@ -197,7 +201,7 @@ const ShiftPage = () => {
         });
       }
 
-      setSubmittedShifts((prev) => [...prev, data as ShiftRow]);
+      invalidateShifts();
       toast({
         title: getRandomPraise(),
         description: `${selectedDate} ${config.label}（+${type === "off" ? 0 : pointsPerShift}pt）`,
@@ -210,7 +214,7 @@ const ShiftPage = () => {
     if (!shift) return;
     await supabase.from("points_history").delete().eq("shift_id", shift.id);
     await supabase.from("shifts").delete().eq("id", shift.id);
-    setSubmittedShifts((prev) => prev.filter((s) => s.id !== shift.id));
+    invalidateShifts();
     toast({ title: "シフトを削除しました" });
   };
 
