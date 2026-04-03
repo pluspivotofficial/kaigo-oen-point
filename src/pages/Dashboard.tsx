@@ -230,7 +230,7 @@ const Dashboard = () => {
   };
 
   return (
-    <AppLayout title="介護職応援ポイント">
+    <AppLayout title={<img src={appLogo} alt="介護職応援ポイント" className="h-10" />}>
       {/* Profile Completion Banner */}
       <ProfileCompletionBanner userId={user?.id} />
 
