@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings, Trophy, CalendarCheck, Flame } from "lucide-react";
+import appLogo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
