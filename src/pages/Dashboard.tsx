@@ -186,12 +186,21 @@ const Dashboard = () => {
       });
 
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-    supabase.from("shifts").select("hours").eq("user_id", user.id).gte("shift_date", monthStart)
+    const monthStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStart = monthStartDate.toISOString();
+    const monthStartLabel = monthStartDate.toISOString().split("T")[0];
+
+    supabase.from("points_history").select("points").eq("user_id", user.id).gte("created_at", monthStart)
+      .then(({ data }) => {
+        if (data) {
+          setMonthlyPoints(data.reduce((sum, r) => sum + r.points, 0));
+        }
+      });
+
+    supabase.from("shifts").select("id").eq("user_id", user.id).gte("shift_date", monthStartLabel)
       .then(({ data }) => {
         if (data) {
           setMonthlyShifts(data.length);
-          setMonthlyPoints(data.reduce((sum, r) => sum + r.hours, 0));
         }
       });
 
