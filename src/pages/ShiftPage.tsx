@@ -232,7 +232,8 @@ const ShiftPage = () => {
               const shiftConfig = shift ? SHIFT_CONFIG[shift.shift_type as ShiftType] : null;
               const isSelected = selectedDate === cell.date;
               const dayOfWeek = new Date(cell.date + "T00:00:00").getDay();
-              const isDisabled = !cell.isCurrentMonth || new Date(cell.date + "T00:00:00") < firstLaunchDate;
+               const cellDate = new Date(cell.date + "T00:00:00");
+               const isDisabled = !cell.isCurrentMonth || cellDate.getTime() < firstLaunchDate.getTime();
 
               return (
                 <button
