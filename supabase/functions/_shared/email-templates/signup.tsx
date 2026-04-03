@@ -29,7 +29,7 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="ja" dir="ltr">
     <Head />
-    <Preview>{siteName} - メールアドレスの確認</Preview>
+    <Preview>{siteName} - メールアドレスの承認</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>メールアドレスの確認</Heading>
