@@ -36,37 +36,61 @@ interface ShiftRow {
 
 const ShiftPage = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [submittedShifts, setSubmittedShifts] = useState<ShiftRow[]>([]);
-  const [firstLaunchDate, setFirstLaunchDate] = useState<Date>(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  });
-  const [isInCampaign, setIsInCampaign] = useState(false);
 
-  useEffect(() => {
-    if (!user) return;
-    supabase.from("profiles").select("first_launch_date").eq("user_id", user.id).single()
-      .then(({ data }) => {
-        if (data?.first_launch_date) {
-          const parts = data.first_launch_date.split("-");
-          const launch = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-          setFirstLaunchDate(launch);
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const diffDays = Math.ceil((today.getTime() - launch.getTime()) / (1000 * 60 * 60 * 24));
-          if (diffDays <= 7) setIsInCampaign(true);
-        }
-      });
-    supabase.from("shifts").select("*").eq("user_id", user.id).order("shift_date", { ascending: true })
-      .then(({ data }) => {
-        if (data) setSubmittedShifts(data as ShiftRow[]);
-      });
-  }, [user]);
+  // Use shared profile hook data
+  const { data: profileData } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).single();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const firstLaunchDate = useMemo(() => {
+    if (!profileData?.first_launch_date) return new Date();
+    const parts = profileData.first_launch_date.split("-");
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  }, [profileData?.first_launch_date]);
+
+  const isInCampaign = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.ceil((today.getTime() - firstLaunchDate.getTime()) / (1000 * 60 * 60 * 24)) <= 7;
+  }, [firstLaunchDate]);
+
+  // Only fetch shifts for visible month range (prev, current, next)
+  const shiftRangeStart = useMemo(() => {
+    const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    return d.toISOString().split("T")[0];
+  }, [currentMonth]);
+  const shiftRangeEnd = useMemo(() => {
+    const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 2, 0);
+    return d.toISOString().split("T")[0];
+  }, [currentMonth]);
+
+  const { data: submittedShifts = [] } = useQuery({
+    queryKey: ["shifts", user?.id, shiftRangeStart, shiftRangeEnd],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data } = await supabase
+        .from("shifts")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("shift_date", shiftRangeStart)
+        .lte("shift_date", shiftRangeEnd)
+        .order("shift_date", { ascending: true });
+      return (data ?? []) as ShiftRow[];
+    },
+    enabled: !!user,
+  });
 
   const shiftByDate = useMemo(() => {
     const map: Record<string, ShiftRow> = {};
