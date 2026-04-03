@@ -29,10 +29,10 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="ja" dir="ltr">
     <Head />
-    <Preview>{siteName} - メールアドレスの確認</Preview>
+    <Preview>{siteName} - メールアドレスの承認</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>メールアドレスの確認</Heading>
+        <Heading style={h1}>メールアドレスの承認</Heading>
         <Text style={text}>
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
@@ -40,14 +40,10 @@ export const SignupEmail = ({
           にご登録いただきありがとうございます！
         </Text>
         <Text style={text}>
-          以下のボタンをクリックして、メールアドレス（
-          <Link href={`mailto:${recipient}`} style={link}>
-            {recipient}
-          </Link>
-          ）を確認してください。
+          以下のボタンをクリックして、メールアドレスを承認してください。
         </Text>
         <Button style={button} href={confirmationUrl}>
-          メールアドレスを確認する
+          メールアドレスを承認する
         </Button>
         <Text style={footer}>
           アカウントを作成した覚えがない場合は、このメールを無視してください。
