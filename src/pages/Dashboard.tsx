@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Coins, CalendarDays, Users, ExternalLink, TrendingUp, Clock, Megaphone, Gift, Sparkles, LogOut, MapPin, FileText, Settings, Trophy, CalendarCheck, Flame } from "lucide-react";
+import appLogo from "@/assets/logo.png";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -76,25 +77,35 @@ const MOCK_NOTICES = [
 const ProfileCompletionBanner = ({ userId }: { userId?: string }) => {
   const [show, setShow] = useState(false);
   const [completed, setCompleted] = useState(0);
-  const [total] = useState(11);
+  const [total, setTotal] = useState(10);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!userId) return;
     supabase.from("profiles")
-      .select("full_name, avatar_url, address, date_of_birth, care_experience, care_qualifications, employment_type, dispatch_company, hourly_rate, weekly_days, preferred_shift")
+      .select("full_name, address, date_of_birth, phone_number, gender, current_status, current_job, employment_type, care_qualifications, care_experience, dispatch_company, hourly_rate, contract_end_date, work_location")
       .eq("user_id", userId)
       .single()
       .then(({ data }) => {
         if (!data) return;
-        let count = 0;
         const d = data as any;
-        ["full_name", "avatar_url", "address", "date_of_birth", "care_experience", "care_qualifications", "employment_type", "dispatch_company", "weekly_days", "preferred_shift"].forEach(k => {
+        const isDispatch = d.employment_type === "dispatch";
+        let count = 0;
+        // Basic (5) + Work (5)
+        ["full_name", "date_of_birth", "gender", "address", "phone_number", "current_status", "current_job", "employment_type", "care_qualifications", "care_experience"].forEach(k => {
           if (d[k] && String(d[k]).trim() !== "") count++;
         });
-        if (d.hourly_rate && d.hourly_rate > 0) count++;
+        let t = 10;
+        if (isDispatch) {
+          t = 14;
+          ["dispatch_company", "contract_end_date", "work_location"].forEach(k => {
+            if (d[k] && String(d[k]).trim() !== "") count++;
+          });
+          if (d.hourly_rate && d.hourly_rate > 0) count++;
+        }
+        setTotal(t);
         setCompleted(count);
-        if (count < total) setShow(true);
+        if (count < t) setShow(true);
       });
   }, [userId]);
 
@@ -219,7 +230,7 @@ const Dashboard = () => {
   };
 
   return (
-    <AppLayout title="介護職応援ポイント">
+    <AppLayout title={<img src={appLogo} alt="介護職応援ポイント" className="h-10" />}>
       {/* Profile Completion Banner */}
       <ProfileCompletionBanner userId={user?.id} />
 
