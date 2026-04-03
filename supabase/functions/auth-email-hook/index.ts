@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "hop-point"
+const SITE_NAME = "介護職応援ポイント"
 const SENDER_DOMAIN = "notify.kaigooenpointo.com"
 const ROOT_DOMAIN = "kaigooenpointo.com"
 const FROM_DOMAIN = "kaigooenpointo.com" // Domain shown in From address (may be root or sender subdomain)
