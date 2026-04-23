@@ -1,5 +1,6 @@
 import BottomNav from "./BottomNav";
 import AppFooter from "./AppFooter";
+import { AppTutorial } from "./AppTutorial";
 
 const AppLayout = ({ children, title }: { children: React.ReactNode; title: React.ReactNode }) => {
   return (
@@ -12,8 +13,11 @@ const AppLayout = ({ children, title }: { children: React.ReactNode; title: Reac
         <AppFooter />
       </main>
       <BottomNav />
+      <AppTutorial />
     </div>
   );
 };
+
+export default AppLayout;
 
 export default AppLayout;

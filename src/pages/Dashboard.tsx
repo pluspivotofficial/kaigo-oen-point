@@ -238,7 +238,7 @@ const Dashboard = () => {
       )}
 
       {/* Points Hero */}
-      <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6 animate-pulse-glow">
+      <Card data-tour="dashboard-points" className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6 animate-pulse-glow">
         <CardContent className="p-6 text-center">
           <p className="text-primary-foreground/70 text-sm font-medium mb-1">累計ポイント</p>
           <div className="flex items-center justify-center gap-2">
@@ -258,7 +258,7 @@ const Dashboard = () => {
       <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
         クイックアクション
       </h2>
-      <div className="space-y-3 mb-6">
+      <div data-tour="dashboard-actions" className="space-y-3 mb-6">
         <Button variant="outline" className="w-full justify-start gap-3 h-14 text-left" onClick={() => navigate("/shift")}>
           <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <CalendarDays className="h-5 w-5 text-primary" />
