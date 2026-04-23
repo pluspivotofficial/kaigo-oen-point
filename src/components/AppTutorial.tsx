@@ -173,6 +173,7 @@ export const AppTutorial = () => {
         last: "完了",
         next: "次へ",
         skip: "スキップ",
+        nextLabelWithProgress: "次へ ({step}/{steps}ステップ)",
       }}
       styles={{
         options: {
