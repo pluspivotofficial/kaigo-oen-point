@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { User, MapPin, Briefcase, Award, Check, CalendarDays, Building2, DollarSign, Phone, Heart } from "lucide-react";
+import { User, MapPin, Briefcase, Award, Check, CalendarDays, Building2, DollarSign, Phone, Heart, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
+import { resetTutorials } from "@/components/AppTutorial";
 
 interface ProfileData {
   display_name: string | null;
@@ -505,6 +506,18 @@ const ProfilePage = () => {
 
       <Button onClick={handleSave} className="w-full" size="lg" disabled={saving}>
         {saving ? "保存中..." : "プロフィールを保存する"}
+      </Button>
+
+      <Button
+        variant="outline"
+        className="w-full mt-3 gap-2"
+        onClick={() => {
+          resetTutorials();
+          toast({ title: "チュートリアルをリセットしました", description: "各ページを開くと再表示されます" });
+        }}
+      >
+        <HelpCircle className="h-4 w-4" />
+        アプリの使い方をもう一度見る
       </Button>
     </AppLayout>
   );
