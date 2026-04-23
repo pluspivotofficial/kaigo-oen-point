@@ -33,48 +33,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   "general": "その他",
 };
 
-const MOCK_NOTICES = [
-  {
-    id: 1,
-    type: "campaign" as const,
-    title: "春の紹介キャンペーン開催中！",
-    description: "3/31まで友人紹介で通常の2倍、30,000ポイントもらえる！",
-    icon: Gift,
-    color: "bg-reward-purple/10 text-reward-purple",
-    badge: "キャンペーン",
-    badgeVariant: "default" as const,
-  },
-  {
-    id: 2,
-    type: "info" as const,
-    title: "4月のシフト申請受付開始",
-    description: "4月分のシフト申請が可能になりました。お早めに申請ください。",
-    icon: Megaphone,
-    color: "bg-primary/10 text-primary",
-    badge: "お知らせ",
-    badgeVariant: "secondary" as const,
-  },
-  {
-    id: 3,
-    type: "event" as const,
-    title: "【4/12開催】介護職交流会 in 渋谷",
-    description: "他施設のスタッフと情報交換できる交流イベント！軽食付き・参加無料。定員30名。",
-    icon: CalendarCheck,
-    color: "bg-primary/10 text-primary",
-    badge: "イベント",
-    badgeVariant: "default" as const,
-  },
-  {
-    id: 4,
-    type: "new" as const,
-    title: "ポイント還元サイトがリニューアル",
-    description: "より使いやすくなりました。新しいサイトをチェック！",
-    icon: Sparkles,
-    color: "bg-secondary/10 text-secondary",
-    badge: "NEW",
-    badgeVariant: "outline" as const,
-  },
-];
+const NOTICE_CATEGORY_META: Record<string, { icon: any; color: string; label: string; badgeVariant: any }> = {
+  campaign: { icon: Gift, color: "bg-reward-purple/10 text-reward-purple", label: "キャンペーン", badgeVariant: "default" },
+  info: { icon: Megaphone, color: "bg-primary/10 text-primary", label: "お知らせ", badgeVariant: "secondary" },
+  event: { icon: CalendarCheck, color: "bg-primary/10 text-primary", label: "イベント", badgeVariant: "default" },
+  new: { icon: Sparkles, color: "bg-secondary/10 text-secondary", label: "NEW", badgeVariant: "outline" },
+};
 
 const ProfileCompletionBanner = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
@@ -179,6 +143,20 @@ const Dashboard = () => {
         .order("published_at", { ascending: false })
         .limit(5);
       return (data ?? []) as ColumnPreview[];
+    },
+  });
+
+  // Notices
+  const { data: notices = [] } = useQuery({
+    queryKey: ["notices_published"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("notices")
+        .select("id, title, description, category, display_order")
+        .eq("is_published", true)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: false });
+      return data ?? [];
     },
   });
 
@@ -346,29 +324,37 @@ const Dashboard = () => {
       </div>
 
       {/* Notices & Campaigns */}
-      <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
-        お知らせ・キャンペーン
-      </h2>
-      <div className="space-y-3 mb-6">
-        {MOCK_NOTICES.map((notice) => (
-          <Card key={notice.id} className="overflow-hidden">
-            <CardContent className="p-4 flex items-start gap-3">
-              <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${notice.color}`}>
-                <notice.icon className="h-5 w-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant={notice.badgeVariant} className="text-[10px] px-1.5 py-0">
-                    {notice.badge}
-                  </Badge>
-                </div>
-                <p className="font-semibold text-sm leading-snug">{notice.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{notice.description}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {notices.length > 0 && (
+        <>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
+            お知らせ・キャンペーン
+          </h2>
+          <div className="space-y-3 mb-6">
+            {notices.map((notice: any) => {
+              const meta = NOTICE_CATEGORY_META[notice.category] ?? NOTICE_CATEGORY_META.info;
+              const Icon = meta.icon;
+              return (
+                <Card key={notice.id} className="overflow-hidden">
+                  <CardContent className="p-4 flex items-start gap-3">
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${meta.color}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={meta.badgeVariant} className="text-[10px] px-1.5 py-0">
+                          {meta.label}
+                        </Badge>
+                      </div>
+                      <p className="font-semibold text-sm leading-snug">{notice.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed whitespace-pre-wrap">{notice.description}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Latest Columns */}
       {columns.length > 0 && (
@@ -425,6 +411,10 @@ const Dashboard = () => {
             <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/admin/points")}>
               <Coins className="h-4 w-4" />
               ポイント管理
+            </Button>
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/admin/notices")}>
+              <Megaphone className="h-4 w-4" />
+              お知らせ・キャンペーン管理
             </Button>
           </div>
         </>
