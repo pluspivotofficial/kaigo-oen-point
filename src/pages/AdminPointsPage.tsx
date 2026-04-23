@@ -51,6 +51,7 @@ interface UserSummary {
   display_name: string | null;
   full_name: string | null;
   prefecture: string | null;
+  phone_number: string | null;
   total_points: number;
   earn_points: number;
   spend_points: number;
