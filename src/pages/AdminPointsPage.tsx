@@ -446,6 +446,56 @@ const AdminPointsPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Redeem (cash out) Dialog */}
+        <Dialog open={redeemOpen} onOpenChange={setRedeemOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>ポイント換金（減算）</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-muted text-sm">
+                <p className="text-xs text-muted-foreground">対象ユーザー</p>
+                <p className="font-medium">
+                  {selectedUser.display_name || selectedUser.full_name || "未設定"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  現在の残高:{" "}
+                  <span className="font-bold text-primary">
+                    {selectedUser.total_points.toLocaleString()}pt
+                  </span>
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="redeem-points">減算するポイント</Label>
+                <Input
+                  id="redeem-points"
+                  type="number"
+                  min="1"
+                  placeholder="例: 1000"
+                  value={redeemPoints}
+                  onChange={(e) => setRedeemPoints(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="redeem-desc">説明</Label>
+                <Input
+                  id="redeem-desc"
+                  value={redeemDescription}
+                  onChange={(e) => setRedeemDescription(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRedeemOpen(false)} disabled={redeeming}>
+                キャンセル
+              </Button>
+              <Button onClick={handleRedeem} disabled={redeeming} variant="destructive">
+                {redeeming ? "処理中..." : "減算する"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </AppLayout>
     );
   }
