@@ -77,6 +77,12 @@ const AdminPointsPage = () => {
   const [deleteEntry, setDeleteEntry] = useState<PointEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // redeem (cash out) dialog
+  const [redeemOpen, setRedeemOpen] = useState(false);
+  const [redeemPoints, setRedeemPoints] = useState<string>("");
+  const [redeemDescription, setRedeemDescription] = useState<string>("ポイント換金");
+  const [redeeming, setRedeeming] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase
