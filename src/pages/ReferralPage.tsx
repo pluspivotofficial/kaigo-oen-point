@@ -142,7 +142,7 @@ const ReferralPage = () => {
       </Card>
 
       {/* Limit info - Meter */}
-      <Card className="mb-5">
+      <Card data-tour="referral-meter" className="mb-5">
         <CardContent className="p-4">
           <div className="flex items-end justify-between mb-2">
             <div className="flex items-center gap-2">

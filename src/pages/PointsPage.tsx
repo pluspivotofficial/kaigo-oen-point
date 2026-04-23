@@ -80,7 +80,7 @@ const PointsPage = () => {
 
       {/* 累計推移グラフ */}
       {chartData.length > 0 && (
-        <Card className="mb-6">
+        <Card data-tour="points-chart" className="mb-6">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
@@ -121,7 +121,7 @@ const PointsPage = () => {
       )}
 
       {/* ポイントを獲得できる導線 */}
-      <Card className="mb-6">
+      <Card data-tour="points-earn" className="mb-6">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Gift className="h-4 w-4 text-secondary" />
