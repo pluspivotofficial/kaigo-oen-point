@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, X, MessageCircleQuestion, Clock } from "lucide-react";
+import { ArrowLeft, Check, X, MessageCircleQuestion, Clock, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -26,6 +27,7 @@ const AdminQuestionsPage = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -60,6 +62,21 @@ const AdminQuestionsPage = () => {
       toast({ title: "エラー", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "承認しました" });
+      fetchQuestions();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    // delete dependent records first (likes, answers) then question
+    await supabase.from("question_likes").delete().eq("question_id", deleteId);
+    await supabase.from("question_answers").delete().eq("question_id", deleteId);
+    const { error } = await supabase.from("questions").delete().eq("id", deleteId);
+    if (error) {
+      toast({ title: "エラー", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "削除しました" });
+      setDeleteId(null);
       fetchQuestions();
     }
   };
@@ -99,16 +116,21 @@ const AdminQuestionsPage = () => {
             </div>
           </div>
         </div>
-        {showActions && (
-          <div className="flex gap-2 mt-3 justify-end">
-            <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => handleReject(q.id)}>
-              <X className="h-3.5 w-3.5" /> 却下
-            </Button>
-            <Button size="sm" className="gap-1" onClick={() => handleApprove(q.id)}>
-              <Check className="h-3.5 w-3.5" /> 承認
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-2 mt-3 justify-end flex-wrap">
+          {showActions && (
+            <>
+              <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => handleReject(q.id)}>
+                <X className="h-3.5 w-3.5" /> 却下
+              </Button>
+              <Button size="sm" className="gap-1" onClick={() => handleApprove(q.id)}>
+                <Check className="h-3.5 w-3.5" /> 承認
+              </Button>
+            </>
+          )}
+          <Button size="sm" variant="outline" className="gap-1 text-destructive" onClick={() => setDeleteId(q.id)}>
+            <Trash2 className="h-3.5 w-3.5" /> 削除
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -157,6 +179,21 @@ const AdminQuestionsPage = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>質問を削除しますか？</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            この質問とすべての回答・いいねが削除されます。この操作は取り消せません。
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>キャンセル</Button>
+            <Button variant="destructive" onClick={handleDelete}>削除する</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
