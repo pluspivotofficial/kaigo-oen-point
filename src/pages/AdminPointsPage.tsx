@@ -564,7 +564,10 @@ const AdminPointsPage = () => {
                       <p className="text-sm font-medium truncate max-w-[180px]">
                         {s.display_name || s.full_name || "未設定"}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">{s.prefecture || "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {s.prefecture || "—"}
+                        {s.phone_number && <> · {s.phone_number}</>}
+                      </p>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="text-sm font-bold text-primary">
