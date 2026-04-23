@@ -225,7 +225,48 @@ const AdminPointsPage = () => {
     setDeleting(false);
   };
 
-  if (isAdmin === null) {
+  const openRedeem = () => {
+    setRedeemPoints("");
+    setRedeemDescription("ポイント換金");
+    setRedeemOpen(true);
+  };
+
+  const handleRedeem = async () => {
+    if (!selectedUser) return;
+    const pts = Math.abs(Number(redeemPoints));
+    if (!pts || Number.isNaN(pts)) {
+      toast({ title: "減算するポイントを入力してください", variant: "destructive" });
+      return;
+    }
+    if (pts > selectedUser.total_points) {
+      toast({
+        title: "残高不足",
+        description: `現在の残高 ${selectedUser.total_points.toLocaleString()}pt を超えています`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setRedeeming(true);
+    const { data, error } = await supabase
+      .from("points_history")
+      .insert({
+        user_id: selectedUser.user_id,
+        points: -pts,
+        type: "spend",
+        description: redeemDescription || "ポイント換金",
+      })
+      .select()
+      .single();
+    if (error || !data) {
+      toast({ title: "換金エラー", description: error?.message, variant: "destructive" });
+      setRedeeming(false);
+      return;
+    }
+    setAllPoints((prev) => [data as PointEntry, ...prev]);
+    toast({ title: `${pts.toLocaleString()}pt を減算しました` });
+    setRedeemOpen(false);
+    setRedeeming(false);
+  };
     return (
       <AppLayout title="ポイント管理">
         <p className="text-muted-foreground text-center py-12">読み込み中...</p>
