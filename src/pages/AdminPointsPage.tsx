@@ -26,13 +26,14 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-import { Coins, Search, Pencil, Trash2, ChevronLeft, Users } from "lucide-react";
+import { Coins, Search, Pencil, Trash2, ChevronLeft, Users, MinusCircle } from "lucide-react";
 
 interface Profile {
   user_id: string;
   display_name: string | null;
   full_name: string | null;
   prefecture: string | null;
+  phone_number: string | null;
 }
 
 interface PointEntry {
@@ -50,6 +51,7 @@ interface UserSummary {
   display_name: string | null;
   full_name: string | null;
   prefecture: string | null;
+  phone_number: string | null;
   total_points: number;
   earn_points: number;
   spend_points: number;
@@ -75,6 +77,12 @@ const AdminPointsPage = () => {
   const [deleteEntry, setDeleteEntry] = useState<PointEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // redeem (cash out) dialog
+  const [redeemOpen, setRedeemOpen] = useState(false);
+  const [redeemPoints, setRedeemPoints] = useState<string>("");
+  const [redeemDescription, setRedeemDescription] = useState<string>("ポイント換金");
+  const [redeeming, setRedeeming] = useState(false);
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -87,7 +95,7 @@ const AdminPointsPage = () => {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: profilesData }, { data: pointsData }] = await Promise.all([
-      supabase.from("profiles").select("user_id, display_name, full_name, prefecture"),
+      supabase.from("profiles").select("user_id, display_name, full_name, prefecture, phone_number"),
       supabase.from("points_history").select("*").order("created_at", { ascending: false }).limit(5000),
     ]);
     if (profilesData) setProfiles(profilesData as Profile[]);
@@ -107,6 +115,7 @@ const AdminPointsPage = () => {
         display_name: p.display_name,
         full_name: p.full_name,
         prefecture: p.prefecture,
+        phone_number: p.phone_number,
         total_points: 0,
         earn_points: 0,
         spend_points: 0,
@@ -121,6 +130,7 @@ const AdminPointsPage = () => {
           display_name: null,
           full_name: null,
           prefecture: null,
+          phone_number: null,
           total_points: 0,
           earn_points: 0,
           spend_points: 0,
@@ -139,12 +149,16 @@ const AdminPointsPage = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return summaries;
+    const qDigits = q.replace(/\D/g, "");
     return summaries.filter((s) => {
+      const phoneDigits = (s.phone_number || "").replace(/\D/g, "");
       return (
         (s.display_name || "").toLowerCase().includes(q) ||
         (s.full_name || "").toLowerCase().includes(q) ||
         (s.prefecture || "").toLowerCase().includes(q) ||
-        s.user_id.toLowerCase().includes(q)
+        s.user_id.toLowerCase().includes(q) ||
+        (s.phone_number || "").toLowerCase().includes(q) ||
+        (qDigits.length > 0 && phoneDigits.includes(qDigits))
       );
     });
   }, [summaries, search]);
@@ -211,6 +225,49 @@ const AdminPointsPage = () => {
     setDeleting(false);
   };
 
+  const openRedeem = () => {
+    setRedeemPoints("");
+    setRedeemDescription("ポイント換金");
+    setRedeemOpen(true);
+  };
+
+  const handleRedeem = async () => {
+    if (!selectedUser) return;
+    const pts = Math.abs(Number(redeemPoints));
+    if (!pts || Number.isNaN(pts)) {
+      toast({ title: "減算するポイントを入力してください", variant: "destructive" });
+      return;
+    }
+    if (pts > selectedUser.total_points) {
+      toast({
+        title: "残高不足",
+        description: `現在の残高 ${selectedUser.total_points.toLocaleString()}pt を超えています`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setRedeeming(true);
+    const { data, error } = await supabase
+      .from("points_history")
+      .insert({
+        user_id: selectedUser.user_id,
+        points: -pts,
+        type: "spend",
+        description: redeemDescription || "ポイント換金",
+      })
+      .select()
+      .single();
+    if (error || !data) {
+      toast({ title: "換金エラー", description: error?.message, variant: "destructive" });
+      setRedeeming(false);
+      return;
+    }
+    setAllPoints((prev) => [data as PointEntry, ...prev]);
+    toast({ title: `${pts.toLocaleString()}pt を減算しました` });
+    setRedeemOpen(false);
+    setRedeeming(false);
+  };
+
   if (isAdmin === null) {
     return (
       <AppLayout title="ポイント管理">
@@ -245,21 +302,35 @@ const AdminPointsPage = () => {
             <CardTitle className="text-base">
               {selectedUser.display_name || selectedUser.full_name || "未設定"}
             </CardTitle>
+            {selectedUser.phone_number && (
+              <p className="text-xs text-muted-foreground">📞 {selectedUser.phone_number}</p>
+            )}
             <p className="text-xs text-muted-foreground break-all">{selectedUser.user_id}</p>
           </CardHeader>
-          <CardContent className="grid grid-cols-3 gap-2 text-center">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <p className="text-[10px] text-muted-foreground">合計</p>
-              <p className="text-lg font-bold text-primary">{selectedUser.total_points.toLocaleString()}</p>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-3 rounded-lg bg-primary/10">
+                <p className="text-[10px] text-muted-foreground">合計</p>
+                <p className="text-lg font-bold text-primary">{selectedUser.total_points.toLocaleString()}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted">
+                <p className="text-[10px] text-muted-foreground">獲得</p>
+                <p className="text-lg font-bold">+{selectedUser.earn_points.toLocaleString()}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted">
+                <p className="text-[10px] text-muted-foreground">使用</p>
+                <p className="text-lg font-bold">{selectedUser.spend_points.toLocaleString()}</p>
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-muted">
-              <p className="text-[10px] text-muted-foreground">獲得</p>
-              <p className="text-lg font-bold">+{selectedUser.earn_points.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-muted">
-              <p className="text-[10px] text-muted-foreground">使用</p>
-              <p className="text-lg font-bold">{selectedUser.spend_points.toLocaleString()}</p>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2 text-destructive border-destructive/50 hover:bg-destructive/10"
+              onClick={openRedeem}
+            >
+              <MinusCircle className="h-4 w-4" />
+              ポイントを換金（減算）する
+            </Button>
           </CardContent>
         </Card>
 
@@ -375,6 +446,56 @@ const AdminPointsPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Redeem (cash out) Dialog */}
+        <Dialog open={redeemOpen} onOpenChange={setRedeemOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>ポイント換金（減算）</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-muted text-sm">
+                <p className="text-xs text-muted-foreground">対象ユーザー</p>
+                <p className="font-medium">
+                  {selectedUser.display_name || selectedUser.full_name || "未設定"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  現在の残高:{" "}
+                  <span className="font-bold text-primary">
+                    {selectedUser.total_points.toLocaleString()}pt
+                  </span>
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="redeem-points">減算するポイント</Label>
+                <Input
+                  id="redeem-points"
+                  type="number"
+                  min="1"
+                  placeholder="例: 1000"
+                  value={redeemPoints}
+                  onChange={(e) => setRedeemPoints(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="redeem-desc">説明</Label>
+                <Input
+                  id="redeem-desc"
+                  value={redeemDescription}
+                  onChange={(e) => setRedeemDescription(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRedeemOpen(false)} disabled={redeeming}>
+                キャンセル
+              </Button>
+              <Button onClick={handleRedeem} disabled={redeeming} variant="destructive">
+                {redeeming ? "処理中..." : "減算する"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </AppLayout>
     );
   }
@@ -411,7 +532,7 @@ const AdminPointsPage = () => {
       <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="名前・都道府県・IDで検索"
+          placeholder="名前・電話番号・都道府県・IDで検索"
           className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -443,7 +564,10 @@ const AdminPointsPage = () => {
                       <p className="text-sm font-medium truncate max-w-[180px]">
                         {s.display_name || s.full_name || "未設定"}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">{s.prefecture || "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {s.prefecture || "—"}
+                        {s.phone_number && <> · {s.phone_number}</>}
+                      </p>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="text-sm font-bold text-primary">
