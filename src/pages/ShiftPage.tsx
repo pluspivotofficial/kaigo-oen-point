@@ -147,6 +147,17 @@ const ShiftPage = () => {
     queryClient.invalidateQueries({ queryKey: ["pointsHistory", user?.id] });
   };
 
+  const advanceToNextDay = (dateStr: string) => {
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() + 1);
+    const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    // 月をまたぐ場合は表示月も切り替え
+    if (d.getMonth() !== currentMonth.getMonth() || d.getFullYear() !== currentMonth.getFullYear()) {
+      setCurrentMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+    }
+    setSelectedDate(next);
+  };
+
   const handleShiftSelect = async (type: ShiftType) => {
     if (!selectedDate) return;
     if (!user) {
@@ -180,6 +191,7 @@ const ShiftPage = () => {
 
       invalidateShifts();
       toast({ title: `${config.label}に変更しました` });
+      advanceToNextDay(selectedDate);
     } else {
       const config = SHIFT_CONFIG[type];
       const { data, error } = await supabase.from("shifts").insert({
@@ -209,6 +221,7 @@ const ShiftPage = () => {
         title: getRandomPraise(),
         description: `${selectedDate} ${config.label}（+${type === "off" ? 0 : pointsPerShift}pt）`,
       });
+      advanceToNextDay(selectedDate);
     }
   };
 
@@ -269,12 +282,15 @@ const ShiftPage = () => {
               const dayOfWeek = new Date(cell.date + "T00:00:00").getDay();
                const cellDate = new Date(cell.date + "T00:00:00");
                const isDisabled = !cell.isCurrentMonth || cellDate.getTime() < firstLaunchDate.getTime();
+               const holiday = hd.isHoliday(cellDate);
+               const isHoliday = !!holiday;
 
               return (
                 <button
                   key={idx}
                   onClick={() => !isDisabled && setSelectedDate(cell.date)}
                   disabled={isDisabled}
+                  title={isHoliday && holiday ? (Array.isArray(holiday) ? holiday[0].name : (holiday as any).name) : undefined}
                   className={cn(
                     "relative flex flex-col items-center justify-start py-1 min-h-[52px] border-b border-r text-sm transition-colors",
                     isDisabled && "opacity-30",
@@ -284,10 +300,13 @@ const ShiftPage = () => {
                 >
                   <span className={cn(
                     "text-xs font-bold",
-                    dayOfWeek === 0 ? "text-red-500" : dayOfWeek === 6 ? "text-blue-500" : "text-foreground",
+                    isHoliday ? "text-red-500" : dayOfWeek === 0 ? "text-red-500" : dayOfWeek === 6 ? "text-blue-500" : "text-foreground",
                     !cell.isCurrentMonth && "opacity-40"
                   )}>
                     {cell.day}
+                    {isHoliday && cell.isCurrentMonth && (
+                      <span className="block text-[8px] font-normal text-red-500 leading-none mt-0.5">祝</span>
+                    )}
                   </span>
                   {shiftConfig && (
                     <span className={cn("text-[10px] font-bold mt-0.5", shiftConfig.textColor)}>
