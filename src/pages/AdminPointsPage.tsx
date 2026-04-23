@@ -89,7 +89,7 @@ const AdminPointsPage = () => {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: profilesData }, { data: pointsData }] = await Promise.all([
-      supabase.from("profiles").select("user_id, display_name, full_name, prefecture"),
+      supabase.from("profiles").select("user_id, display_name, full_name, prefecture, phone_number"),
       supabase.from("points_history").select("*").order("created_at", { ascending: false }).limit(5000),
     ]);
     if (profilesData) setProfiles(profilesData as Profile[]);
