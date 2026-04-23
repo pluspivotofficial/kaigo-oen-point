@@ -17,6 +17,7 @@ import QuestionsPage from "./pages/QuestionsPage";
 import QuestionDetailPage from "./pages/QuestionDetailPage";
 import AdminQuestionsPage from "./pages/AdminQuestionsPage";
 import AdminReferralsPage from "./pages/AdminReferralsPage";
+import AdminPointsPage from "./pages/AdminPointsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/admin/columns" element={<ProtectedRoute><AdminColumnsPage /></ProtectedRoute>} />
             <Route path="/admin/questions" element={<ProtectedRoute><AdminQuestionsPage /></ProtectedRoute>} />
             <Route path="/admin/referrals" element={<ProtectedRoute><AdminReferralsPage /></ProtectedRoute>} />
+            <Route path="/admin/points" element={<ProtectedRoute><AdminPointsPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -422,6 +422,10 @@ const Dashboard = () => {
               <Users className="h-4 w-4" />
               紹介管理
             </Button>
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate("/admin/points")}>
+              <Coins className="h-4 w-4" />
+              ポイント管理
+            </Button>
           </div>
         </>
       )}
