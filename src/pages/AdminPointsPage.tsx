@@ -267,6 +267,8 @@ const AdminPointsPage = () => {
     setRedeemOpen(false);
     setRedeeming(false);
   };
+
+  if (isAdmin === null) {
     return (
       <AppLayout title="ポイント管理">
         <p className="text-muted-foreground text-center py-12">読み込み中...</p>
