@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import Holidays from "date-holidays";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+const hd = new Holidays("JP");
 
 type ShiftType = "early" | "day" | "late" | "night" | "off";
 
