@@ -141,11 +141,36 @@ const ReferralPage = () => {
         </CardContent>
       </Card>
 
-      {/* Limit info */}
-      <Card className="mb-5 border-secondary/20 bg-secondary/5">
-        <CardContent className="p-4 text-center">
-          <p className="text-sm">紹介枠: <strong>{referralCount}/5枠</strong></p>
-          <p className="text-xs text-muted-foreground mt-1">最大5枠まで紹介できます</p>
+      {/* Limit info - Meter */}
+      <Card className="mb-5">
+        <CardContent className="p-4">
+          <div className="flex items-end justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">紹介枠の利用状況</span>
+            </div>
+            <span className="text-sm">
+              <strong className="text-2xl text-primary">{referralCount}</strong>
+              <span className="text-muted-foreground"> / 5 枠</span>
+            </span>
+          </div>
+          <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${
+                referralCount >= 5
+                  ? "bg-destructive"
+                  : referralCount >= 4
+                  ? "bg-reward-gold"
+                  : "bg-primary"
+              }`}
+              style={{ width: `${Math.min((referralCount / 5) * 100, 100)}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-2 text-center">
+            {referralCount >= 5
+              ? "紹介上限に達しました"
+              : `あと ${5 - referralCount} 枠 紹介できます`}
+          </p>
         </CardContent>
       </Card>
 

@@ -1,4 +1,4 @@
-import { Coins, ArrowUpRight, ArrowDownRight, ExternalLink } from "lucide-react";
+import { Coins, ArrowUpRight, ArrowDownRight, ExternalLink, TrendingUp, CalendarDays, UserCog, Gift } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,9 +6,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 const PointsPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data: history = [] } = useQuery({
     queryKey: ["pointsHistory", user?.id],
@@ -26,6 +38,30 @@ const PointsPage = () => {
 
   const totalPoints = history.reduce((sum, item) => sum + item.points, 0);
 
+  // 累計推移グラフデータ（古い順に並べて累積）
+  const chartData = useMemo(() => {
+    if (history.length === 0) return [];
+    const sorted = [...history].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    // 日付ごとに集計
+    const byDate: Record<string, number> = {};
+    sorted.forEach((h) => {
+      const d = new Date(h.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      byDate[key] = (byDate[key] ?? 0) + h.points;
+    });
+    let cum = 0;
+    return Object.entries(byDate).map(([date, pts]) => {
+      cum += pts;
+      const d = new Date(date);
+      return {
+        date: `${d.getMonth() + 1}/${d.getDate()}`,
+        累計: cum,
+      };
+    });
+  }, [history]);
+
   return (
     <AppLayout title="ポイント">
       <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6">
@@ -42,18 +78,98 @@ const PointsPage = () => {
         </CardContent>
       </Card>
 
-      <Card className="mb-6 border-primary/20 bg-primary/5">
-        <CardContent className="p-5">
-          <a href="https://hop-kaigo.jp/register/seeker" target="_blank" rel="noopener noreferrer">
-            <Button className="w-full h-12 gap-2 mb-3" size="lg">
-              <ExternalLink className="h-4 w-4" />
-              ポイントを有効化する（会員登録）
+      {/* 累計推移グラフ */}
+      {chartData.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              ポイント獲得推移
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                  />
+                  <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="累計"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: "hsl(var(--primary))" }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ポイントを獲得できる導線 */}
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Gift className="h-4 w-4 text-secondary" />
+            ポイントを獲得する
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 h-auto py-3 text-left"
+            onClick={() => navigate("/shift")}
+          >
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <CalendarDays className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">シフトを登録する</p>
+              <p className="text-xs text-muted-foreground">1シフト登録で +5pt</p>
+            </div>
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3 h-auto py-3 text-left"
+            onClick={() => navigate("/profile")}
+          >
+            <div className="h-9 w-9 rounded-lg bg-secondary/10 flex items-center justify-center flex-shrink-0">
+              <UserCog className="h-5 w-5 text-secondary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">プロフィールを入力する</p>
+              <p className="text-xs text-muted-foreground">各項目+100pt、完了で+500ptボーナス</p>
+            </div>
+          </Button>
+
+          <a href="https://hop-kaigo.jp/register/seeker" target="_blank" rel="noopener noreferrer" className="block">
+            <Button variant="outline" className="w-full justify-start gap-3 h-auto py-3 text-left whitespace-normal">
+              <div className="h-9 w-9 rounded-lg bg-reward-gold/10 flex items-center justify-center flex-shrink-0">
+                <ExternalLink className="h-5 w-5 text-reward-gold" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-sm">ポイントを有効化（ホップ会員登録）</p>
+                <p className="text-xs text-muted-foreground leading-relaxed break-words">
+                  会員登録→「仕事を開始」で勤務時間に応じて1時間=1pt自動加算
+                </p>
+              </div>
             </Button>
           </a>
-          <div className="space-y-2 text-xs text-muted-foreground">
-            <p>上記サイトで<strong className="text-foreground">会員登録</strong>後、<strong className="text-foreground">「仕事を開始」</strong>することでポイントが有効化されます。</p>
-            <p>有効化以降は、<strong className="text-foreground">累計勤務時間に応じて1時間＝1ポイント</strong>が自動的に加算されます。</p>
-          </div>
         </CardContent>
       </Card>
 
@@ -63,7 +179,12 @@ const PointsPage = () => {
         </CardHeader>
         <CardContent className="space-y-1">
           {history.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">まだ履歴がありません</p>
+            <div className="text-center py-8 space-y-3">
+              <p className="text-sm text-muted-foreground">まだ履歴がありません</p>
+              <p className="text-xs text-muted-foreground">
+                上の「ポイントを獲得する」からスタート！
+              </p>
+            </div>
           ) : (
             history.map((item) => (
               <div key={item.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
