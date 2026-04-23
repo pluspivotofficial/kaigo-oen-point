@@ -26,13 +26,14 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
-import { Coins, Search, Pencil, Trash2, ChevronLeft, Users } from "lucide-react";
+import { Coins, Search, Pencil, Trash2, ChevronLeft, Users, MinusCircle } from "lucide-react";
 
 interface Profile {
   user_id: string;
   display_name: string | null;
   full_name: string | null;
   prefecture: string | null;
+  phone_number: string | null;
 }
 
 interface PointEntry {
