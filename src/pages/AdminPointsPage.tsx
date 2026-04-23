@@ -532,7 +532,7 @@ const AdminPointsPage = () => {
       <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="名前・都道府県・IDで検索"
+          placeholder="名前・電話番号・都道府県・IDで検索"
           className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
