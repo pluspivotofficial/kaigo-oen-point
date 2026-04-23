@@ -185,25 +185,33 @@ export const AppTutorial = () => {
         },
         tooltip: {
           borderRadius: "12px",
-          fontSize: "14px",
+          fontSize: "16px",
+          padding: "20px",
         },
         tooltipTitle: {
-          fontSize: "16px",
+          fontSize: "19px",
           fontWeight: 700,
+          marginBottom: "8px",
+        },
+        tooltipContent: {
+          fontSize: "16px",
+          lineHeight: 1.7,
+          padding: "8px 0",
         },
         buttonNext: {
           backgroundColor: "hsl(var(--primary))",
           borderRadius: "8px",
-          fontSize: "13px",
-          padding: "8px 16px",
+          fontSize: "15px",
+          padding: "10px 20px",
+          fontWeight: 600,
         },
         buttonBack: {
           color: "hsl(var(--muted-foreground))",
-          fontSize: "13px",
+          fontSize: "15px",
         },
         buttonSkip: {
           color: "hsl(var(--muted-foreground))",
-          fontSize: "12px",
+          fontSize: "14px",
         },
       }}
     />
