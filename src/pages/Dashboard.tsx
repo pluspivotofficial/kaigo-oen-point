@@ -33,48 +33,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   "general": "その他",
 };
 
-const MOCK_NOTICES = [
-  {
-    id: 1,
-    type: "campaign" as const,
-    title: "春の紹介キャンペーン開催中！",
-    description: "3/31まで友人紹介で通常の2倍、30,000ポイントもらえる！",
-    icon: Gift,
-    color: "bg-reward-purple/10 text-reward-purple",
-    badge: "キャンペーン",
-    badgeVariant: "default" as const,
-  },
-  {
-    id: 2,
-    type: "info" as const,
-    title: "4月のシフト申請受付開始",
-    description: "4月分のシフト申請が可能になりました。お早めに申請ください。",
-    icon: Megaphone,
-    color: "bg-primary/10 text-primary",
-    badge: "お知らせ",
-    badgeVariant: "secondary" as const,
-  },
-  {
-    id: 3,
-    type: "event" as const,
-    title: "【4/12開催】介護職交流会 in 渋谷",
-    description: "他施設のスタッフと情報交換できる交流イベント！軽食付き・参加無料。定員30名。",
-    icon: CalendarCheck,
-    color: "bg-primary/10 text-primary",
-    badge: "イベント",
-    badgeVariant: "default" as const,
-  },
-  {
-    id: 4,
-    type: "new" as const,
-    title: "ポイント還元サイトがリニューアル",
-    description: "より使いやすくなりました。新しいサイトをチェック！",
-    icon: Sparkles,
-    color: "bg-secondary/10 text-secondary",
-    badge: "NEW",
-    badgeVariant: "outline" as const,
-  },
-];
+const NOTICE_CATEGORY_META: Record<string, { icon: any; color: string; label: string; badgeVariant: any }> = {
+  campaign: { icon: Gift, color: "bg-reward-purple/10 text-reward-purple", label: "キャンペーン", badgeVariant: "default" },
+  info: { icon: Megaphone, color: "bg-primary/10 text-primary", label: "お知らせ", badgeVariant: "secondary" },
+  event: { icon: CalendarCheck, color: "bg-primary/10 text-primary", label: "イベント", badgeVariant: "default" },
+  new: { icon: Sparkles, color: "bg-secondary/10 text-secondary", label: "NEW", badgeVariant: "outline" },
+};
 
 const ProfileCompletionBanner = ({ profile }: { profile: any }) => {
   const navigate = useNavigate();
