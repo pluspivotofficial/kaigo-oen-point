@@ -109,6 +109,7 @@ const AdminPointsPage = () => {
         display_name: p.display_name,
         full_name: p.full_name,
         prefecture: p.prefecture,
+        phone_number: p.phone_number,
         total_points: 0,
         earn_points: 0,
         spend_points: 0,
@@ -123,6 +124,7 @@ const AdminPointsPage = () => {
           display_name: null,
           full_name: null,
           prefecture: null,
+          phone_number: null,
           total_points: 0,
           earn_points: 0,
           spend_points: 0,
@@ -141,12 +143,16 @@ const AdminPointsPage = () => {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return summaries;
+    const qDigits = q.replace(/\D/g, "");
     return summaries.filter((s) => {
+      const phoneDigits = (s.phone_number || "").replace(/\D/g, "");
       return (
         (s.display_name || "").toLowerCase().includes(q) ||
         (s.full_name || "").toLowerCase().includes(q) ||
         (s.prefecture || "").toLowerCase().includes(q) ||
-        s.user_id.toLowerCase().includes(q)
+        s.user_id.toLowerCase().includes(q) ||
+        (s.phone_number || "").toLowerCase().includes(q) ||
+        (qDigits.length > 0 && phoneDigits.includes(qDigits))
       );
     });
   }, [summaries, search]);
