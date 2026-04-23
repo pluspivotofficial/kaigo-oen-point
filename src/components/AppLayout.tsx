@@ -19,5 +19,3 @@ const AppLayout = ({ children, title }: { children: React.ReactNode; title: Reac
 };
 
 export default AppLayout;
-
-export default AppLayout;
