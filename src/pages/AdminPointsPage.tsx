@@ -302,21 +302,35 @@ const AdminPointsPage = () => {
             <CardTitle className="text-base">
               {selectedUser.display_name || selectedUser.full_name || "未設定"}
             </CardTitle>
+            {selectedUser.phone_number && (
+              <p className="text-xs text-muted-foreground">📞 {selectedUser.phone_number}</p>
+            )}
             <p className="text-xs text-muted-foreground break-all">{selectedUser.user_id}</p>
           </CardHeader>
-          <CardContent className="grid grid-cols-3 gap-2 text-center">
-            <div className="p-3 rounded-lg bg-primary/10">
-              <p className="text-[10px] text-muted-foreground">合計</p>
-              <p className="text-lg font-bold text-primary">{selectedUser.total_points.toLocaleString()}</p>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="p-3 rounded-lg bg-primary/10">
+                <p className="text-[10px] text-muted-foreground">合計</p>
+                <p className="text-lg font-bold text-primary">{selectedUser.total_points.toLocaleString()}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted">
+                <p className="text-[10px] text-muted-foreground">獲得</p>
+                <p className="text-lg font-bold">+{selectedUser.earn_points.toLocaleString()}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted">
+                <p className="text-[10px] text-muted-foreground">使用</p>
+                <p className="text-lg font-bold">{selectedUser.spend_points.toLocaleString()}</p>
+              </div>
             </div>
-            <div className="p-3 rounded-lg bg-muted">
-              <p className="text-[10px] text-muted-foreground">獲得</p>
-              <p className="text-lg font-bold">+{selectedUser.earn_points.toLocaleString()}</p>
-            </div>
-            <div className="p-3 rounded-lg bg-muted">
-              <p className="text-[10px] text-muted-foreground">使用</p>
-              <p className="text-lg font-bold">{selectedUser.spend_points.toLocaleString()}</p>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full gap-2 text-destructive border-destructive/50 hover:bg-destructive/10"
+              onClick={openRedeem}
+            >
+              <MinusCircle className="h-4 w-4" />
+              ポイントを換金（減算）する
+            </Button>
           </CardContent>
         </Card>
 
