@@ -245,7 +245,7 @@ const ShiftPage = () => {
 
   return (
     <AppLayout title="シフト登録">
-      <Card className="mb-4">
+      <Card data-tour="shift-calendar" className="mb-4">
         <CardContent className="p-0">
           {/* Month header */}
           <div className="flex items-center justify-between px-4 py-3 bg-pink-100 rounded-t-lg">
@@ -338,7 +338,7 @@ const ShiftPage = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-5 gap-2">
+            <div data-tour="shift-buttons" className="grid grid-cols-5 gap-2">
               {(Object.entries(SHIFT_CONFIG) as [ShiftType, typeof SHIFT_CONFIG["early"]][]).map(([type, config]) => {
                 const isActive = selectedShiftForDate?.shift_type === type;
                 return (
