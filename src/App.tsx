@@ -17,6 +17,7 @@ import QuestionsPage from "./pages/QuestionsPage";
 import QuestionDetailPage from "./pages/QuestionDetailPage";
 import AdminQuestionsPage from "./pages/AdminQuestionsPage";
 import AdminReferralsPage from "./pages/AdminReferralsPage";
+import AdminPointsPage from "./pages/AdminPointsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
