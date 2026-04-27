@@ -182,25 +182,35 @@ const ShiftPage = () => {
         return;
       }
       const config = SHIFT_CONFIG[type];
+      const pts = calcPoints(type);
       const { error } = await supabase.from("shifts").update({
         shift_type: type,
         start_time: "00:00",
         end_time: "00:00",
         hours: 1,
-        points_earned: type === "off" ? 0 : pointsPerShift,
+        points_earned: pts,
       }).eq("id", existing.id);
 
       if (error) { toast({ title: "エラー", description: error.message, variant: "destructive" }); return; }
 
-      await supabase.from("points_history")
-        .update({ points: type === "off" ? 0 : pointsPerShift, description: `${config.label}シフト登録` })
-        .eq("shift_id", existing.id);
+      // Replace points history record(s) for this shift to keep things consistent
+      await supabase.from("points_history").delete().eq("shift_id", existing.id);
+      if (type !== "off") {
+        await supabase.from("points_history").insert({
+          user_id: user.id,
+          description: `${config.label}シフト登録${type === "night" ? "（夜勤ボーナス+" + nightBonus + "pt含む）" : ""}${isInCampaign ? "（キャンペーン10倍）" : ""}`,
+          points: pts,
+          type: "earn",
+          shift_id: existing.id,
+        });
+      }
 
       invalidateShifts();
       toast({ title: `${config.label}に変更しました` });
       advanceToNextDay(selectedDate);
     } else {
       const config = SHIFT_CONFIG[type];
+      const pts = calcPoints(type);
       const { data, error } = await supabase.from("shifts").insert({
         user_id: user.id,
         shift_date: selectedDate,
@@ -208,7 +218,7 @@ const ShiftPage = () => {
         start_time: "00:00",
         end_time: "00:00",
         hours: 1,
-        points_earned: type === "off" ? 0 : pointsPerShift,
+        points_earned: pts,
       }).select().single();
 
       if (error) { toast({ title: "エラー", description: error.message, variant: "destructive" }); return; }
@@ -216,8 +226,8 @@ const ShiftPage = () => {
       if (type !== "off") {
         await supabase.from("points_history").insert({
           user_id: user.id,
-          description: `${config.label}シフト登録${isInCampaign ? "（キャンペーン10倍）" : ""}`,
-          points: pointsPerShift,
+          description: `${config.label}シフト登録${type === "night" ? "（夜勤ボーナス+" + nightBonus + "pt含む）" : ""}${isInCampaign ? "（キャンペーン10倍）" : ""}`,
+          points: pts,
           type: "earn",
           shift_id: data.id,
         });
@@ -226,7 +236,7 @@ const ShiftPage = () => {
       invalidateShifts();
       toast({
         title: getRandomPraise(),
-        description: `${selectedDate} ${config.label}（+${type === "off" ? 0 : pointsPerShift}pt）`,
+        description: `${selectedDate} ${config.label}（+${pts}pt）`,
       });
       advanceToNextDay(selectedDate);
     }
