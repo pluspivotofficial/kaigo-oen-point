@@ -138,7 +138,7 @@ const ShiftPage = () => {
   }, [currentMonth]);
 
   const pointsPerShift = isInCampaign ? 50 : 5;
-  const nightBonus = isInCampaign ? 100 : 10;
+  const nightBonus = isInCampaign ? 50 : 5;
 
   const calcPoints = (type: ShiftType) => {
     if (type === "off") return 0;
@@ -376,7 +376,7 @@ const ShiftPage = () => {
             </div>
 
             <p className="text-xs text-muted-foreground mt-3 text-center">
-              {isInCampaign ? "🎉 キャンペーン中！1シフト +50pt（夜勤は+150pt）" : "1シフト登録で +5pt（夜勤は+15pt / 休みは0pt）"}
+              {isInCampaign ? "🎉 キャンペーン中！1シフト +50pt（夜勤は+100pt）" : "1シフト登録で +5pt（夜勤は+10pt / 休みは0pt）"}
             </p>
           </CardContent>
         </Card>
