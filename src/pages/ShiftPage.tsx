@@ -376,7 +376,7 @@ const ShiftPage = () => {
             </div>
 
             <p className="text-xs text-muted-foreground mt-3 text-center">
-              {isInCampaign ? "🎉 キャンペーン中！1シフト +50pt" : "1シフト登録で +5pt（休みは0pt）"}
+              {isInCampaign ? "🎉 キャンペーン中！1シフト +50pt（夜勤は+150pt）" : "1シフト登録で +5pt（夜勤は+15pt / 休みは0pt）"}
             </p>
           </CardContent>
         </Card>
