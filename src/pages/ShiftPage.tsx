@@ -138,6 +138,13 @@ const ShiftPage = () => {
   }, [currentMonth]);
 
   const pointsPerShift = isInCampaign ? 50 : 5;
+  const nightBonus = isInCampaign ? 100 : 10;
+
+  const calcPoints = (type: ShiftType) => {
+    if (type === "off") return 0;
+    if (type === "night") return pointsPerShift + nightBonus;
+    return pointsPerShift;
+  };
 
   const invalidateShifts = () => {
     queryClient.invalidateQueries({ queryKey: ["shifts", user?.id] });
