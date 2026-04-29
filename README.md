@@ -1,73 +1,106 @@
-# Welcome to your Lovable project
+# 介護職応援ポイント (hop-point)
 
-## Project info
+介護派遣の勤務時間をポイント化して還元する Web アプリ（PWA対応）。
+1時間 = 1ポイント、1ポイント = 1円で還元される。
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+**本番URL**: https://kaigooenpointo.com
 
-## How can I edit this code?
+## 技術スタック
 
-There are several ways of editing your application.
+- **フロントエンド**: React 18 + Vite 5 + TypeScript
+- **UI**: shadcn/ui (Radix UI) + Tailwind CSS
+- **状態管理**: TanStack Query + React Hook Form + Zod
+- **バックエンド**: Supabase (Auth + Postgres + Storage + RLS)
+- **ホスティング**: Vercel
+- **その他**: TipTap (リッチエディタ), Recharts (グラフ), date-fns
 
-**Use Lovable**
+## ローカル開発
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 前提
 
-Changes made via Lovable will be committed automatically to this repo.
+- [bun](https://bun.sh) >= 1.3
+- [Supabase CLI](https://supabase.com/docs/guides/cli) >= 2.95（DBマイグレーション運用時のみ必要）
 
-**Use your preferred IDE**
+### セットアップ
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+# 依存関係インストール
+bun install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# 環境変数を設定（値はチームで共有）
+cp .env.example .env
+# .env を開き、Supabase Project URL / anon key 等を記入
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# 開発サーバー起動
+bun run dev
+# → http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+### 環境変数
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| キー | 説明 | 値の取得元 |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Supabase プロジェクトの API URL | Supabase Dashboard > Settings > API |
+| `VITE_SUPABASE_PROJECT_ID` | プロジェクト Reference (URL のサブドメイン部) | 上記 URL から抽出 |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | anon key（公開可） | Supabase Dashboard > Settings > API |
 
-**Use GitHub Codespaces**
+### スクリプト
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+bun run dev          # 開発サーバー (Vite, port 8080)
+bun run build        # 本番ビルド → dist/
+bun run preview      # ビルド結果のプレビュー
+bun run lint         # ESLint
+bun run test         # Vitest (run)
+bun run test:watch   # Vitest (watch)
+```
 
-## What technologies are used for this project?
+## Supabase マイグレーション
 
-This project is built with:
+スキーマ変更は `supabase/migrations/` に SQL ファイルとして追加し、
+リモートに push する。
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```bash
+# 初回のみ: プロジェクトに link
+supabase login
+supabase link --project-ref <PROJECT_REF>
 
-## How can I deploy this project?
+# マイグレーション適用
+supabase db push --dry-run   # 事前確認
+supabase db push             # 本番適用
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+# 型定義の再生成（client コードで Database 型を使うため）
+supabase gen types typescript --project-id <PROJECT_REF> \
+  > src/integrations/supabase/types.ts
+```
 
-## Can I connect a custom domain to my Lovable project?
+> Phase 2（メール機能復活）まで `_disabled_20260403015139_email_infra.sql` は
+> プレフィックスにより `db push` 対象外になっている。復活時はファイル名を戻す。
 
-Yes, you can!
+## Vercel デプロイ
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Vercel Dashboard で GitHub リポジトリを Import
+2. Framework: **Vite** を自動検出（`vercel.json` で明示済）
+3. Environment Variables に `.env` の3つのキーを Production / Preview の両方で登録
+4. Deploy
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+カスタムドメインは `Settings > Domains` で `kaigooenpointo.com` を追加。
+
+## プロジェクトの経緯
+
+本アプリは元々 [Lovable Cloud](https://lovable.dev) でホスティングされていたが、
+2026-04 に **自前 Supabase (Tokyo) + Vercel** へ移行した。
+
+### 移行で除去した Lovable 依存
+- `lovable-tagger` Vite プラグイン
+- `@lovable.dev/email-js` / `@lovable.dev/webhooks-js`（メール機能）
+  - 該当 Edge Functions は `supabase/functions/_disabled/` に隔離（Phase 2 復活予定）
+
+### Phase 1（移行完了）
+- Auth / Points / Shifts / Q&A / Referrals / Ranking / Admin など全コア機能
+- データはテストデータのみだったため引継ぎなし、新規再作成
+
+### Phase 2（予定）
+- メール機能の復活（Supabase Auth Email + 自前 SMTP / Resend）
+- Storage オブジェクトの本番セットアップ
+- OG画像の自前ホスト化
