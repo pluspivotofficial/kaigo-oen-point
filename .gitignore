@@ -22,3 +22,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env
+.env.production
+.env.local
+!.env.example
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+# Migration dumps (一時ファイル、Phase 1移行用)
+dumps/
