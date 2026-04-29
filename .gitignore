@@ -25,9 +25,7 @@ dist-ssr
 
 # Environment variables
 .env
-.env.production
-.env.local
-.env.*.backup
+.env.*
 !.env.example
 
 # Supabase CLI
