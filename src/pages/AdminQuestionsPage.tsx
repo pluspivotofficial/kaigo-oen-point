@@ -23,21 +23,15 @@ interface Question {
 
 const AdminQuestionsPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin, isAdminLoading } = useAuth();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    supabase.from("user_roles").select("role").eq("user_id", user.id)
-      .then(({ data }) => {
-        const admin = data?.some((r: any) => r.role === "admin") ?? false;
-        setIsAdmin(admin);
-        if (!admin) navigate("/");
-      });
-  }, [user]);
+    if (isAdminLoading) return;
+    if (!isAdmin) navigate("/");
+  }, [isAdmin, isAdminLoading, navigate]);
 
   const fetchQuestions = async () => {
     const { data } = await supabase

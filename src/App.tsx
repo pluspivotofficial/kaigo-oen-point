@@ -11,14 +11,20 @@ import PointsPage from "./pages/PointsPage";
 import ReferralPage from "./pages/ReferralPage";
 import AuthPage from "./pages/AuthPage";
 import PrefectureRankingPage from "./pages/PrefectureRankingPage";
-import AdminColumnsPage from "./pages/AdminColumnsPage";
 import ColumnDetailPage from "./pages/ColumnDetailPage";
 import QuestionsPage from "./pages/QuestionsPage";
 import QuestionDetailPage from "./pages/QuestionDetailPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminUserDetailPage from "./pages/AdminUserDetailPage";
+import AdminLogsPage from "./pages/AdminLogsPage";
+import AdminCampaignsPage from "./pages/AdminCampaignsPage";
+import AdminColumnsPage from "./pages/AdminColumnsPage";
 import AdminQuestionsPage from "./pages/AdminQuestionsPage";
 import AdminReferralsPage from "./pages/AdminReferralsPage";
 import AdminPointsPage from "./pages/AdminPointsPage";
 import AdminNoticesPage from "./pages/AdminNoticesPage";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -57,11 +63,19 @@ const App = () => (
             <Route path="/column/:id" element={<ProtectedRoute><ColumnDetailPage /></ProtectedRoute>} />
             <Route path="/questions" element={<ProtectedRoute><QuestionsPage /></ProtectedRoute>} />
             <Route path="/questions/:id" element={<ProtectedRoute><QuestionDetailPage /></ProtectedRoute>} />
-            <Route path="/admin/columns" element={<ProtectedRoute><AdminColumnsPage /></ProtectedRoute>} />
-            <Route path="/admin/questions" element={<ProtectedRoute><AdminQuestionsPage /></ProtectedRoute>} />
-            <Route path="/admin/referrals" element={<ProtectedRoute><AdminReferralsPage /></ProtectedRoute>} />
-            <Route path="/admin/points" element={<ProtectedRoute><AdminPointsPage /></ProtectedRoute>} />
-            <Route path="/admin/notices" element={<ProtectedRoute><AdminNoticesPage /></ProtectedRoute>} />
+
+            {/* Admin routes - require is_admin=true (defense in depth: ProtectedAdminRoute + per-page check) */}
+            <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboardPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/users" element={<ProtectedAdminRoute><AdminUsersPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/users/:id" element={<ProtectedAdminRoute><AdminUserDetailPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/logs" element={<ProtectedAdminRoute><AdminLogsPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/campaigns" element={<ProtectedAdminRoute><AdminCampaignsPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/columns" element={<ProtectedAdminRoute><AdminColumnsPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/questions" element={<ProtectedAdminRoute><AdminQuestionsPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/referrals" element={<ProtectedAdminRoute><AdminReferralsPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/points" element={<ProtectedAdminRoute><AdminPointsPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/notices" element={<ProtectedAdminRoute><AdminNoticesPage /></ProtectedAdminRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

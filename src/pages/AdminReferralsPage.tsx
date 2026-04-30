@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,13 +21,18 @@ interface Referral {
 }
 
 const AdminReferralsPage = () => {
-  const { user } = useAuth();
+  const { user, isAdmin, isAdminLoading } = useAuth();
+  const navigate = useNavigate();
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (isAdminLoading) return;
+    if (!isAdmin) {
+      navigate("/");
+      return;
+    }
     supabase
       .from("referrals")
       .select("*")
@@ -35,7 +41,7 @@ const AdminReferralsPage = () => {
         if (data) setReferrals(data as Referral[]);
         setLoading(false);
       });
-  }, [user]);
+  }, [isAdmin, isAdminLoading, navigate]);
 
   const handleApproveRegistered = async (referral: Referral) => {
     setProcessing(referral.id);

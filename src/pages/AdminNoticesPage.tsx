@@ -36,8 +36,7 @@ const getCategoryMeta = (cat: string) =>
 
 const AdminNoticesPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, isAdmin, isAdminLoading } = useAuth();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,14 +46,9 @@ const AdminNoticesPage = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    supabase.from("user_roles").select("role").eq("user_id", user.id)
-      .then(({ data }) => {
-        const admin = data?.some((r: any) => r.role === "admin") ?? false;
-        setIsAdmin(admin);
-        if (!admin) navigate("/");
-      });
-  }, [user]);
+    if (isAdminLoading) return;
+    if (!isAdmin) navigate("/");
+  }, [isAdmin, isAdminLoading, navigate]);
 
   const fetchNotices = async () => {
     const { data } = await supabase

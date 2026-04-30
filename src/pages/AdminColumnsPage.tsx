@@ -37,10 +37,9 @@ const CATEGORIES = [
 ];
 
 const AdminColumnsPage = () => {
-  const { user } = useAuth();
+  const { user, isAdmin, isAdminLoading } = useAuth();
   const navigate = useNavigate();
   const [articles, setArticles] = useState<ColumnArticle[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Editor state
@@ -55,29 +54,21 @@ const AdminColumnsPage = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    checkAdminAndLoad();
-  }, [user]);
-
-  const checkAdminAndLoad = async () => {
-    if (!user) return;
-    // Check admin role
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
-
-    const admin = roles?.some((r: any) => r.role === "admin") ?? false;
-    setIsAdmin(admin);
-
-    if (admin) {
-      // Admins can see all articles (published + drafts) via the admin policy
-      const { data } = await supabase
-        .from("columns_articles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (data) setArticles(data as ColumnArticle[]);
+    if (isAdminLoading) return;
+    if (!isAdmin) {
+      setLoading(false);
+      return;
     }
+    loadArticles();
+  }, [isAdmin, isAdminLoading]);
+
+  const loadArticles = async () => {
+    // Admins can see all articles (published + drafts) via the admin policy
+    const { data } = await supabase
+      .from("columns_articles")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) setArticles(data as ColumnArticle[]);
     setLoading(false);
   };
 

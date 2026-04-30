@@ -59,8 +59,7 @@ interface UserSummary {
 }
 
 const AdminPointsPage = () => {
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const { user, isAdmin, isAdminLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [allPoints, setAllPoints] = useState<PointEntry[]>([]);
@@ -82,15 +81,6 @@ const AdminPointsPage = () => {
   const [redeemPoints, setRedeemPoints] = useState<string>("");
   const [redeemDescription, setRedeemDescription] = useState<string>("ポイント換金");
   const [redeeming, setRedeeming] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .rpc("has_role", { _user_id: user.id, _role: "admin" })
-      .then(({ data }) => {
-        setIsAdmin(Boolean(data));
-      });
-  }, [user]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -195,7 +185,13 @@ const AdminPointsPage = () => {
     setSaving(true);
     const { error } = await supabase
       .from("points_history")
-      .update({ points: pts, description: editDescription })
+      .update({
+        points: pts,
+        description: editDescription,
+        admin_action: true,
+        reason: editDescription,
+        admin_user_id: user?.id ?? null,
+      })
       .eq("id", editEntry.id);
     if (error) {
       toast({ title: "更新エラー", description: error.message, variant: "destructive" });
@@ -254,6 +250,9 @@ const AdminPointsPage = () => {
         points: -pts,
         type: "spend",
         description: redeemDescription || "ポイント換金",
+        admin_action: true,
+        reason: redeemDescription || "ポイント換金",
+        admin_user_id: user?.id ?? null,
       })
       .select()
       .single();
@@ -268,7 +267,7 @@ const AdminPointsPage = () => {
     setRedeeming(false);
   };
 
-  if (isAdmin === null) {
+  if (isAdminLoading) {
     return (
       <AppLayout title="ポイント管理">
         <p className="text-muted-foreground text-center py-12">読み込み中...</p>
