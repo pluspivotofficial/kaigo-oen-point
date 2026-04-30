@@ -49,8 +49,30 @@ const AuthPage = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
+        // 凍結ユーザーチェック (RLS で自分の profile は SELECT 可能)
+        if (signInData.user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_banned")
+            .eq("user_id", signInData.user.id)
+            .maybeSingle();
+
+          if (profile?.is_banned) {
+            // 即時サインアウト、メッセージ表示、navigate しない
+            // ban_reason は意図的に表示しない (法的・個人情報・敵意リスク回避)
+            await supabase.auth.signOut();
+            toast({
+              title: "ログインできません",
+              description: "アカウントが凍結されています。",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+
         navigate("/");
       } else {
         const { data: signUpData, error } = await supabase.auth.signUp({

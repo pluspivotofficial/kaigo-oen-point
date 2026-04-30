@@ -1,1 +1,4 @@
-project_id = "ilzeymtegepxryojgwgv"
+project_id = "iahsseflpspiwnljkqav"
+
+[functions.banned-user-signout]
+verify_jwt = true

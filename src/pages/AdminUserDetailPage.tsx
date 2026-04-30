@@ -89,6 +89,12 @@ const AdminUserDetailPage = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [executingOp, setExecutingOp] = useState(false);
 
+  // BAN form
+  const [banReasonInput, setBanReasonInput] = useState("");
+  const [banDialogOpen, setBanDialogOpen] = useState(false);
+  const [unbanDialogOpen, setUnbanDialogOpen] = useState(false);
+  const [executingBan, setExecutingBan] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     fetchData();
@@ -232,6 +238,91 @@ const AdminUserDetailPage = () => {
       await fetchData();
     }
     setExecutingOp(false);
+  };
+
+  const handleBan = async () => {
+    if (!id || !currentUser || !user) return;
+    if (!banReasonInput.trim()) {
+      toast({ title: "凍結理由を入力してください", variant: "destructive" });
+      return;
+    }
+    setExecutingBan(true);
+
+    // 1. profiles を更新
+    const { error: updateErr } = await supabase
+      .from("profiles")
+      .update({
+        is_banned: true,
+        ban_reason: banReasonInput.trim(),
+        banned_at: new Date().toISOString(),
+        banned_by: currentUser.id,
+      })
+      .eq("user_id", id);
+
+    if (updateErr) {
+      toast({
+        title: "凍結DB更新に失敗",
+        description: updateErr.message,
+        variant: "destructive",
+      });
+      setExecutingBan(false);
+      return;
+    }
+
+    // 2. Edge Function でセッション破棄を試みる
+    let signOutWarning = "";
+    try {
+      const { error: fnErr } = await supabase.functions.invoke(
+        "banned-user-signout",
+        {
+          body: { user_id: id },
+        }
+      );
+      if (fnErr) {
+        signOutWarning = `セッション破棄失敗: ${fnErr.message}。次回トークン更新時(最大1時間)に弾かれます。`;
+      }
+    } catch (e) {
+      signOutWarning = `セッション破棄関数未デプロイか通信失敗。次回トークン更新時(最大1時間)に弾かれます。`;
+    }
+
+    toast({
+      title: "アカウントを凍結しました",
+      description: signOutWarning || "セッション破棄完了、対象ユーザーは即時ログアウトされます。",
+      variant: signOutWarning ? "destructive" : "default",
+    });
+
+    setBanReasonInput("");
+    setBanDialogOpen(false);
+    setExecutingBan(false);
+    await fetchData();
+  };
+
+  const handleUnban = async () => {
+    if (!id) return;
+    setExecutingBan(true);
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        is_banned: false,
+        ban_reason: null,
+        banned_at: null,
+        banned_by: null,
+      })
+      .eq("user_id", id);
+
+    if (error) {
+      toast({
+        title: "凍結解除失敗",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({ title: "アカウント凍結を解除しました" });
+      setUnbanDialogOpen(false);
+      await fetchData();
+    }
+    setExecutingBan(false);
   };
 
   if (loading || !user) {
@@ -446,7 +537,7 @@ const AdminUserDetailPage = () => {
           </CardContent>
         </Card>
 
-        {/* BAN セクション (Phase B-3 で実装予定) */}
+        {/* BAN セクション */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -454,12 +545,49 @@ const AdminUserDetailPage = () => {
               アカウント凍結
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              {user.is_banned
-                ? `凍結中: ${user.ban_reason || "(理由未設定)"}`
-                : "Phase B-3 で実装予定 (Edge Function 経由でセッション破棄)"}
-            </p>
+          <CardContent className="space-y-3">
+            {user.is_banned ? (
+              <>
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                  <p className="font-semibold text-destructive">凍結中</p>
+                  <p className="mt-1 text-muted-foreground">
+                    理由: {user.ban_reason || "(未設定)"}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => setUnbanDialogOpen(true)}
+                  disabled={isSelf}
+                >
+                  凍結を解除
+                </Button>
+                {isSelf && (
+                  <p className="text-xs text-muted-foreground">
+                    自分自身の凍結状態は変更できません
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  凍結すると、対象ユーザーはアプリにログインできなくなります。
+                  既存セッションは Edge Function 経由で破棄されます。
+                </p>
+                <Button
+                  variant="destructive"
+                  onClick={() => setBanDialogOpen(true)}
+                  disabled={isSelf}
+                >
+                  <Ban className="h-4 w-4 mr-1" />
+                  アカウントを凍結
+                </Button>
+                {isSelf && (
+                  <p className="text-xs text-muted-foreground">
+                    自分自身は凍結できません
+                  </p>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -527,7 +655,77 @@ const AdminUserDetailPage = () => {
           </CardContent>
         </Card>
 
-        {/* 確認ダイアログ */}
+        {/* BAN 確認ダイアログ (理由入力) */}
+        <AlertDialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>アカウント凍結の確認</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <div>
+                    対象: {user.display_name || "(表示名未設定)"} (
+                    {user.email})
+                  </div>
+                  <div className="text-xs text-destructive">
+                    この操作で対象ユーザーは即時ログアウトされ、再ログインできなくなります。
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2 py-2">
+              <Label htmlFor="ban-reason">凍結理由 (管理者メモ、必須)</Label>
+              <Textarea
+                id="ban-reason"
+                value={banReasonInput}
+                onChange={(e) => setBanReasonInput(e.target.value)}
+                placeholder="例: 規約違反 (虚偽申告) を確認、3回目の警告"
+                rows={3}
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={executingBan}>
+                キャンセル
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBan}
+                disabled={executingBan || !banReasonInput.trim()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {executingBan ? "凍結処理中..." : "凍結を実行"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* 凍結解除ダイアログ */}
+        <AlertDialog open={unbanDialogOpen} onOpenChange={setUnbanDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>凍結解除の確認</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2">
+                  <div>
+                    対象: {user.display_name || "(表示名未設定)"} (
+                    {user.email})
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    凍結解除後、対象ユーザーは通常通りログイン・アプリ利用が可能になります。
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={executingBan}>
+                キャンセル
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleUnban} disabled={executingBan}>
+                {executingBan ? "解除中..." : "凍結解除"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* ポイント操作 確認ダイアログ */}
         <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
