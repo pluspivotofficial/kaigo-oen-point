@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -42,6 +42,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      campaigns: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          is_active: boolean
+          name: string
+          start_date: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          start_date?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       columns_articles: {
         Row: {
@@ -82,93 +121,6 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      email_send_log: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          id: string
-          message_id: string | null
-          metadata: Json | null
-          recipient_email: string
-          status: string
-          template_name: string
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          message_id?: string | null
-          metadata?: Json | null
-          recipient_email: string
-          status: string
-          template_name: string
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          message_id?: string | null
-          metadata?: Json | null
-          recipient_email?: string
-          status?: string
-          template_name?: string
-        }
-        Relationships: []
-      }
-      email_send_state: {
-        Row: {
-          auth_email_ttl_minutes: number
-          batch_size: number
-          id: number
-          retry_after_until: string | null
-          send_delay_ms: number
-          transactional_email_ttl_minutes: number
-          updated_at: string
-        }
-        Insert: {
-          auth_email_ttl_minutes?: number
-          batch_size?: number
-          id?: number
-          retry_after_until?: string | null
-          send_delay_ms?: number
-          transactional_email_ttl_minutes?: number
-          updated_at?: string
-        }
-        Update: {
-          auth_email_ttl_minutes?: number
-          batch_size?: number
-          id?: number
-          retry_after_until?: string | null
-          send_delay_ms?: number
-          transactional_email_ttl_minutes?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      email_unsubscribe_tokens: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          token: string
-          used_at: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          token: string
-          used_at?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          token?: string
-          used_at?: string | null
         }
         Relationships: []
       }
@@ -258,28 +210,37 @@ export type Database = {
       }
       points_history: {
         Row: {
+          admin_action: boolean
+          admin_user_id: string | null
           created_at: string
           description: string
           id: string
           points: number
+          reason: string | null
           shift_id: string | null
           type: string
           user_id: string
         }
         Insert: {
+          admin_action?: boolean
+          admin_user_id?: string | null
           created_at?: string
           description: string
           id?: string
           points: number
+          reason?: string | null
           shift_id?: string | null
           type: string
           user_id: string
         }
         Update: {
+          admin_action?: boolean
+          admin_user_id?: string | null
           created_at?: string
           description?: string
           id?: string
           points?: number
+          reason?: string | null
           shift_id?: string | null
           type?: string
           user_id?: string
@@ -319,6 +280,9 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          ban_reason: string | null
+          banned_at: string | null
+          banned_by: string | null
           care_experience: string | null
           care_qualifications: string | null
           contract_end_date: string | null
@@ -328,6 +292,7 @@ export type Database = {
           date_of_birth: string | null
           dispatch_company: string | null
           display_name: string | null
+          email: string | null
           employment_type: string | null
           facility_name: string | null
           first_launch_date: string
@@ -335,6 +300,8 @@ export type Database = {
           gender: string | null
           hourly_rate: number | null
           id: string
+          is_admin: boolean
+          is_banned: boolean
           phone_number: string | null
           prefecture: string | null
           preferred_shift: string | null
@@ -346,6 +313,9 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           care_experience?: string | null
           care_qualifications?: string | null
           contract_end_date?: string | null
@@ -355,6 +325,7 @@ export type Database = {
           date_of_birth?: string | null
           dispatch_company?: string | null
           display_name?: string | null
+          email?: string | null
           employment_type?: string | null
           facility_name?: string | null
           first_launch_date?: string
@@ -362,6 +333,8 @@ export type Database = {
           gender?: string | null
           hourly_rate?: number | null
           id?: string
+          is_admin?: boolean
+          is_banned?: boolean
           phone_number?: string | null
           prefecture?: string | null
           preferred_shift?: string | null
@@ -373,6 +346,9 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          ban_reason?: string | null
+          banned_at?: string | null
+          banned_by?: string | null
           care_experience?: string | null
           care_qualifications?: string | null
           contract_end_date?: string | null
@@ -382,6 +358,7 @@ export type Database = {
           date_of_birth?: string | null
           dispatch_company?: string | null
           display_name?: string | null
+          email?: string | null
           employment_type?: string | null
           facility_name?: string | null
           first_launch_date?: string
@@ -389,6 +366,8 @@ export type Database = {
           gender?: string | null
           hourly_rate?: number | null
           id?: string
+          is_admin?: boolean
+          is_banned?: boolean
           phone_number?: string | null
           prefecture?: string | null
           preferred_shift?: string | null
@@ -577,30 +556,6 @@ export type Database = {
         }
         Relationships: []
       }
-      suppressed_emails: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          metadata: Json | null
-          reason: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          metadata?: Json | null
-          reason: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          metadata?: Json | null
-          reason?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           id: string
@@ -631,14 +586,6 @@ export type Database = {
       }
     }
     Functions: {
-      delete_email: {
-        Args: { message_id: number; queue_name: string }
-        Returns: boolean
-      }
-      enqueue_email: {
-        Args: { payload: Json; queue_name: string }
-        Returns: number
-      }
       get_referral_user_points: {
         Args: { _referrer_id: string }
         Returns: {
@@ -653,23 +600,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      move_to_dlq: {
-        Args: {
-          dlq_name: string
-          message_id: number
-          payload: Json
-          source_queue: string
-        }
-        Returns: number
-      }
-      read_email_batch: {
-        Args: { batch_size: number; queue_name: string; vt: number }
-        Returns: {
-          message: Json
-          msg_id: number
-          read_ct: number
-        }[]
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
