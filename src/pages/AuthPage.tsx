@@ -112,6 +112,13 @@ const AuthPage = () => {
 
       if (!referral) return;
 
+      // 自演紹介チェック (referrer 自身が自分のコードで登録するケースを防止)
+      if (referral.referrer_id === newUserId) {
+        console.warn("Self-referral attempt blocked", { referrer: referral.referrer_id });
+        return;
+      }
+
+      // referrals 行を更新 (登録完了状態へ遷移)
       await supabase
         .from("referrals")
         .update({
@@ -122,13 +129,30 @@ const AuthPage = () => {
         } as any)
         .eq("id", referral.id);
 
-      // Award 100pt to referrer
-      await supabase.from("points_history").insert({
-        user_id: referral.referrer_id,
-        description: `紹介ボーナス（${userName || "新規ユーザー"}さん登録）`,
-        points: 100,
-        type: "earn",
-      });
+      // Step1 ボーナス: signup_bonus_granted_at IS NULL のときだけ両方付与
+      if (!(referral as any).signup_bonus_granted_at) {
+        // 紹介人 +100pt
+        await supabase.from("points_history").insert({
+          user_id: referral.referrer_id,
+          description: "紹介ボーナス[Step1]登録完了",
+          points: 100,
+          type: "earn",
+        });
+
+        // 被紹介人 +100pt
+        await supabase.from("points_history").insert({
+          user_id: newUserId,
+          description: "紹介ボーナス[Step1]登録完了",
+          points: 100,
+          type: "earn",
+        });
+
+        // タイムスタンプセット (重複付与防止)
+        await supabase
+          .from("referrals")
+          .update({ signup_bonus_granted_at: new Date().toISOString() } as any)
+          .eq("id", referral.id);
+      }
 
     } catch (err) {
       console.error("Referral processing error:", err);

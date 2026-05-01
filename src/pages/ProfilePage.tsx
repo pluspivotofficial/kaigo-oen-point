@@ -238,35 +238,42 @@ const ProfilePage = () => {
       });
     }
 
-    // Check if ⑨ (care_qualifications) is filled → award referrer 500pt
-    const qualNowFilled = isFieldFilled("care_qualifications", profile.care_qualifications);
-    const qualWasFilled = isFieldFilled("care_qualifications", originalProfile.care_qualifications);
-    if (qualNowFilled && !qualWasFilled) {
-      // Check all fields up to ⑨
-      const fieldsUpTo9 = [...BASIC_FIELDS, ...WORK_FIELDS.slice(0, 4)]; // up to care_qualifications
-      const allUpTo9Filled = fieldsUpTo9.every((f) => isFieldFilled(f.key, profile[f.key]));
-      if (allUpTo9Filled) {
-        const { data: refData } = await supabase
-          .from("referrals")
-          .select("id, referrer_id")
-          .eq("referred_user_id", user.id)
-          .limit(1);
-        if (refData && refData.length > 0) {
-          const referral = refData[0];
-          const { data: existingBonus } = await supabase
-            .from("points_history")
-            .select("id")
-            .eq("user_id", referral.referrer_id)
-            .eq("description", `紹介先プロフィール完成ボーナス（${user.id}）`)
-            .limit(1);
-          if (!existingBonus || existingBonus.length === 0) {
-            await supabase.from("points_history").insert({
-              user_id: referral.referrer_id,
-              description: `紹介先プロフィール完成ボーナス（${user.id}）`,
-              points: 500,
-              type: "earn",
-            });
-          }
+    // Step2 紹介ボーナス: 全9項目入力完了で紹介人・被紹介人に各 +500pt
+    // 旧実装の "care_qualifications transition 起点" によるバグを修正
+    // (順序逆だと永遠に発火しない問題) → 毎回 save 後に判定
+    const fieldsUpTo9 = [...BASIC_FIELDS, ...WORK_FIELDS.slice(0, 4)];
+    const all9Filled = fieldsUpTo9.every((f) => isFieldFilled(f.key, profile[f.key]));
+    if (all9Filled) {
+      const { data: refData } = await supabase
+        .from("referrals")
+        .select("id, referrer_id, profile_bonus_granted_at")
+        .eq("referred_user_id", user.id)
+        .limit(1);
+      if (refData && refData.length > 0) {
+        const referral = refData[0] as any;
+        // タイムスタンプベースで重複付与防止
+        if (!referral.profile_bonus_granted_at) {
+          // 紹介人 +500pt
+          await supabase.from("points_history").insert({
+            user_id: referral.referrer_id,
+            description: "紹介ボーナス[Step2]プロフィール完成",
+            points: 500,
+            type: "earn",
+          });
+
+          // 被紹介人 +500pt (新規)
+          await supabase.from("points_history").insert({
+            user_id: user.id,
+            description: "紹介ボーナス[Step2]プロフィール完成",
+            points: 500,
+            type: "earn",
+          });
+
+          // タイムスタンプセット (次回以降の重複付与を防止)
+          await supabase
+            .from("referrals")
+            .update({ profile_bonus_granted_at: new Date().toISOString() } as any)
+            .eq("id", referral.id);
         }
       }
     }
