@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +15,7 @@ import { format, formatDistanceToNow, startOfMonth } from "date-fns";
 import { ja } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/AdminLayout";
+import UserDetailModal from "@/components/admin/UserDetailModal";
 
 interface UserRow {
   user_id: string;
@@ -34,10 +34,10 @@ interface UserRow {
 }
 
 const AdminUsersPage = () => {
-  const navigate = useNavigate();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -213,7 +213,7 @@ const AdminUsersPage = () => {
                       <TableRow
                         key={u.user_id}
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/admin/users/${u.user_id}`)}
+                        onClick={() => setSelectedUserId(u.user_id)}
                       >
                         <TableCell className="font-medium whitespace-nowrap">
                           {u.display_name || (
@@ -288,6 +288,12 @@ const AdminUsersPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      <UserDetailModal
+        userId={selectedUserId}
+        open={!!selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+      />
     </AdminLayout>
   );
 };
