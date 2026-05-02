@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -10,12 +11,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronRight, Shield, Ban } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Search,
+  ChevronRight,
+  Shield,
+  Ban,
+  Crown,
+  ShieldOff,
+} from "lucide-react";
 import { format, formatDistanceToNow, startOfMonth } from "date-fns";
 import { ja } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import AdminLayout from "@/components/AdminLayout";
 import UserDetailModal from "@/components/admin/UserDetailModal";
+import { useChangeUserRole } from "@/hooks/useChangeUserRole";
 
 interface UserRow {
   user_id: string;
@@ -34,10 +59,35 @@ interface UserRow {
 }
 
 const AdminUsersPage = () => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [roleChangeTarget, setRoleChangeTarget] = useState<UserRow | null>(null);
+  const { mutate: changeRole, isPending: isChangingRole } = useChangeUserRole();
+
+  const handleConfirmRoleChange = () => {
+    if (!roleChangeTarget) return;
+    const newRole = roleChangeTarget.is_admin ? "user" : "admin";
+    const targetId = roleChangeTarget.user_id;
+    changeRole(
+      { userId: targetId, role: newRole },
+      {
+        onSuccess: () => {
+          // 楽観更新: 成功後に該当行のバッジを即座に切替
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.user_id === targetId
+                ? { ...u, is_admin: newRole === "admin" }
+                : u
+            )
+          );
+          setRoleChangeTarget(null);
+        },
+      }
+    );
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -212,7 +262,7 @@ const AdminUsersPage = () => {
                     {filtered.map((u) => (
                       <TableRow
                         key={u.user_id}
-                        className="cursor-pointer hover:bg-muted/50"
+                        className="group cursor-pointer hover:bg-muted/50"
                         onClick={() => setSelectedUserId(u.user_id)}
                       >
                         <TableCell className="font-medium whitespace-nowrap">
@@ -277,7 +327,40 @@ const AdminUsersPage = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex items-center gap-1">
+                            {currentUser?.id !== u.user_id && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setRoleChangeTarget(u);
+                                    }}
+                                    aria-label={
+                                      u.is_admin
+                                        ? "管理者を解除"
+                                        : "管理者に昇格"
+                                    }
+                                  >
+                                    {u.is_admin ? (
+                                      <ShieldOff className="h-3.5 w-3.5 text-destructive" />
+                                    ) : (
+                                      <Crown className="h-3.5 w-3.5 text-primary" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {u.is_admin
+                                    ? "管理者を解除"
+                                    : "管理者に昇格"}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -294,6 +377,59 @@ const AdminUsersPage = () => {
         open={!!selectedUserId}
         onClose={() => setSelectedUserId(null)}
       />
+
+      {/* 権限変更 確認ダイアログ */}
+      <AlertDialog
+        open={!!roleChangeTarget}
+        onOpenChange={(open) => !open && !isChangingRole && setRoleChangeTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {roleChangeTarget?.is_admin
+                ? "管理者を解除しますか?"
+                : "管理者に昇格しますか?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {roleChangeTarget?.is_admin ? (
+                <>
+                  <strong>
+                    {roleChangeTarget?.display_name || "(表示名未設定)"}
+                  </strong>{" "}
+                  さんの管理者権限を解除します。通常ユーザーに戻り、管理画面にアクセスできなくなります。
+                </>
+              ) : (
+                <>
+                  <strong>
+                    {roleChangeTarget?.display_name || "(表示名未設定)"}
+                  </strong>{" "}
+                  さんに管理者権限を付与します。管理画面のすべての機能にアクセス可能になります。
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isChangingRole}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmRoleChange}
+              disabled={isChangingRole}
+              className={
+                roleChangeTarget?.is_admin
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : ""
+              }
+            >
+              {isChangingRole
+                ? "処理中..."
+                : roleChangeTarget?.is_admin
+                ? "管理者を解除"
+                : "管理者に昇格"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 };

@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_action_logs: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       answer_likes: {
         Row: {
           answer_id: string
@@ -488,9 +515,11 @@ export type Database = {
           friend_name: string | null
           id: string
           points_awarded: boolean
+          profile_bonus_granted_at: string | null
           referral_code: string | null
           referred_user_id: string | null
           referrer_id: string
+          signup_bonus_granted_at: string | null
           status: string
         }
         Insert: {
@@ -499,9 +528,11 @@ export type Database = {
           friend_name?: string | null
           id?: string
           points_awarded?: boolean
+          profile_bonus_granted_at?: string | null
           referral_code?: string | null
           referred_user_id?: string | null
           referrer_id: string
+          signup_bonus_granted_at?: string | null
           status?: string
         }
         Update: {
@@ -510,9 +541,11 @@ export type Database = {
           friend_name?: string | null
           id?: string
           points_awarded?: boolean
+          profile_bonus_granted_at?: string | null
           referral_code?: string | null
           referred_user_id?: string | null
           referrer_id?: string
+          signup_bonus_granted_at?: string | null
           status?: string
         }
         Relationships: []
@@ -586,11 +619,22 @@ export type Database = {
       }
     }
     Functions: {
+      change_user_role: {
+        Args: { new_role: string; target_user_id: string }
+        Returns: undefined
+      }
       get_referral_user_points: {
         Args: { _referrer_id: string }
         Returns: {
           referral_id: string
           total_points: number
+        }[]
+      }
+      get_user_last_sign_in: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          last_sign_in_at: string
+          user_id: string
         }[]
       }
       has_role: {

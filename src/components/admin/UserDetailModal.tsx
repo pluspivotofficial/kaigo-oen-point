@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -13,6 +13,16 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,14 +39,17 @@ import {
   Shield,
   Ban,
   Activity,
-  ExternalLink,
   ArrowDown,
   ArrowUp,
+  Crown,
+  ShieldOff,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ja } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useChangeUserRole } from "@/hooks/useChangeUserRole";
 
 interface Props {
   userId: string | null;
@@ -151,6 +164,10 @@ const fmtDateTime = (iso: string | null) =>
   iso ? format(new Date(iso), "yyyy/MM/dd HH:mm") : null;
 
 const UserDetailModal = ({ userId, open, onClose }: Props) => {
+  const { user: currentUser } = useAuth();
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const { mutate: changeRole, isPending: isChangingRole } = useChangeUserRole();
+
   const { data, isLoading, error } = useQuery<UserDetailData>({
     queryKey: ["adminUserDetail", userId],
     enabled: !!userId && open,
@@ -291,18 +308,38 @@ const UserDetailModal = ({ userId, open, onClose }: Props) => {
                     )}
                   </div>
                 </div>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={onClose}
-                >
-                  <Link to={`/admin/users/${data.profile.user_id}`}>
-                    詳細ページ
-                    <ArrowRight className="h-3 w-3 ml-1" />
-                  </Link>
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {currentUser?.id !== data.profile.user_id && (
+                    <Button
+                      variant={data.profile.is_admin ? "destructive" : "ghost"}
+                      size="sm"
+                      onClick={() => setRoleDialogOpen(true)}
+                    >
+                      {data.profile.is_admin ? (
+                        <>
+                          <ShieldOff className="h-3 w-3 mr-1" />
+                          管理者を解除
+                        </>
+                      ) : (
+                        <>
+                          <Crown className="h-3 w-3 mr-1" />
+                          管理者に昇格
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    onClick={onClose}
+                  >
+                    <Link to={`/admin/users/${data.profile.user_id}`}>
+                      詳細ページ
+                      <ArrowRight className="h-3 w-3 ml-1" />
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </DialogHeader>
 
@@ -799,6 +836,72 @@ const UserDetailModal = ({ userId, open, onClose }: Props) => {
                 </p>
               </TabsContent>
             </Tabs>
+
+            {/* 権限変更 確認ダイアログ */}
+            <AlertDialog
+              open={roleDialogOpen}
+              onOpenChange={(o) => !o && !isChangingRole && setRoleDialogOpen(false)}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {data.profile.is_admin
+                      ? "管理者を解除しますか?"
+                      : "管理者に昇格しますか?"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {data.profile.is_admin ? (
+                      <>
+                        <strong>
+                          {data.profile.display_name || "(表示名未設定)"}
+                        </strong>{" "}
+                        さんの管理者権限を解除します。通常ユーザーに戻り、管理画面にアクセスできなくなります。
+                      </>
+                    ) : (
+                      <>
+                        <strong>
+                          {data.profile.display_name || "(表示名未設定)"}
+                        </strong>{" "}
+                        さんに管理者権限を付与します。管理画面のすべての機能にアクセス可能になります。
+                      </>
+                    )}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isChangingRole}>
+                    キャンセル
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      changeRole(
+                        {
+                          userId: data.profile.user_id,
+                          role: data.profile.is_admin ? "user" : "admin",
+                        },
+                        {
+                          onSuccess: () => {
+                            setRoleDialogOpen(false);
+                            // useQuery キャッシュは hook 側で invalidate 済
+                          },
+                        }
+                      );
+                    }}
+                    disabled={isChangingRole}
+                    className={
+                      data.profile.is_admin
+                        ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        : ""
+                    }
+                  >
+                    {isChangingRole
+                      ? "処理中..."
+                      : data.profile.is_admin
+                      ? "管理者を解除"
+                      : "管理者に昇格"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         )}
       </DialogContent>
