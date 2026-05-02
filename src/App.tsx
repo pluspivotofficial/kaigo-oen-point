@@ -11,6 +11,7 @@ import ProfilePage from "./pages/ProfilePage";
 import PointsPage from "./pages/PointsPage";
 import ReferralPage from "./pages/ReferralPage";
 import AuthPage from "./pages/AuthPage";
+import WelcomePage from "./pages/WelcomePage";
 import PrefectureRankingPage from "./pages/PrefectureRankingPage";
 import Achievements from "./pages/Achievements";
 import ColumnDetailPage from "./pages/ColumnDetailPage";
@@ -43,7 +44,7 @@ const queryClient = new QueryClient({
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">読み込み中...</p></div>;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Navigate to="/welcome" replace />;
   return <>{children}</>;
 };
 
@@ -56,6 +57,7 @@ const App = () => (
         <BrowserRouter>
           <AchievementProvider>
           <Routes>
+            <Route path="/welcome" element={<WelcomePage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/shift" element={<ProtectedRoute><ShiftPage /></ProtectedRoute>} />

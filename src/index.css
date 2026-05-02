@@ -100,3 +100,72 @@
     }
   }
 }
+
+/* ============================================================
+   WelcomePage 専用スタイル (説明資料 kaigooenpointo の完全再現)
+   ============================================================ */
+@layer components {
+  /* リボンバッジ "🌸 介護で働くあなたへ 🌸" */
+  .ribbon-badge {
+    background: linear-gradient(135deg, #FF8E6B 0%, #E85A4F 50%, #FF5577 100%);
+    color: white;
+    padding: 11px 36px;
+    font-family: "Zen Maru Gothic", sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: 0.15em;
+    box-shadow: 0 6px 20px rgba(232, 90, 79, 0.35);
+    clip-path: polygon(0% 0%, 100% 0%, 96% 50%, 100% 100%, 0% 100%, 4% 50%);
+    display: inline-block;
+  }
+
+  /* ヒーロータイトル 1行目 "介護職 応援" (coral 本体 + 白影 + gold影) */
+  .hero-line1 {
+    color: #E85A4F;
+    text-shadow: 3px 3px 0 white, 5px 5px 0 #F5C443;
+  }
+
+  /* ヒーロータイトル 2行目 "ポイント ♡" (gold 本体 + 白影 + coral影) */
+  .hero-line2 {
+    color: #E8A93F;
+    text-shadow: 3px 3px 0 white, 5px 5px 0 #E85A4F;
+  }
+
+  /* ハート ♡ (gradient text + 多重 drop-shadow) */
+  .hero-heart {
+    background: linear-gradient(135deg, #FF5577, #FF9FB2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    filter: drop-shadow(2px 2px 0 white) drop-shadow(3px 3px 0 #FFD4D0);
+  }
+
+  /* CTAボタン "今すぐはじめる →" (coral gradient + 3層 box-shadow) */
+  .hero-cta {
+    background: linear-gradient(135deg, #FF8E6B 0%, #E85A4F 50%, #FF5577 100%);
+    color: white;
+    font-family: "Zen Maru Gothic", sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    padding: 21px 48px;
+    border-radius: 999px;
+    box-shadow: 0 10px 28px rgba(232, 90, 79, 0.4),
+                0 0 0 6px rgba(255, 255, 255, 0.6),
+                0 0 0 8px rgba(232, 90, 79, 0.2);
+    transition: transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .hero-cta:hover {
+    transform: translateY(-4px) scale(1.04);
+  }
+  .hero-cta:active {
+    transform: translateY(-2px) scale(1.02);
+  }
+}

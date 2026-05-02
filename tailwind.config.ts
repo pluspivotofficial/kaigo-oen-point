@@ -135,6 +135,27 @@ export default {
             opacity: "0",
           },
         },
+        // Welcome page 専用 (Tailwind 標準の bounce/pulse とは衝突しない命名)
+        "welcome-pulse": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.05)" },
+        },
+        "heart-bounce": {
+          "0%, 100%": { transform: "translateY(0) scale(1) rotate(0deg)" },
+          "25%": { transform: "translateY(-8px) scale(1.05) rotate(-5deg)" },
+          "50%": { transform: "translateY(-12px) scale(1.15) rotate(0deg)" },
+          "75%": { transform: "translateY(-8px) scale(1.05) rotate(5deg)" },
+        },
+        "heart-float": {
+          "0%": { transform: "translateY(0) scale(0.8)", opacity: "0" },
+          "10%": { opacity: "0.6" },
+          "90%": { opacity: "0.6" },
+          "100%": { transform: "translateY(-110vh) scale(1.2)", opacity: "0" },
+        },
+        "scroll-drift": {
+          "0%, 100%": { transform: "translateY(0)", opacity: "0.6" },
+          "50%": { transform: "translateY(8px)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -144,6 +165,10 @@ export default {
         "bounce-soft": "bounce-soft 2s ease-in-out infinite",
         twinkle: "twinkle 2s ease-in-out infinite",
         "petal-fall": "petal-fall 12s linear infinite",
+        "welcome-pulse": "welcome-pulse 2s ease-in-out infinite",
+        "heart-bounce": "heart-bounce 1.8s ease-in-out infinite",
+        "heart-float": "heart-float 12s linear infinite",
+        "scroll-drift": "scroll-drift 1.6s ease-in-out infinite",
       },
     },
   },
