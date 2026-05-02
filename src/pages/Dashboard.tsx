@@ -12,7 +12,8 @@ import AppLayout from "@/components/AppLayout";
 import { PREFECTURES } from "@/lib/prefectures";
 import { toast } from "@/hooks/use-toast";
 import { useLoginBonus } from "@/hooks/useLoginBonus";
-import { useProfile, useTotalPoints, useMonthlyPoints, useIsAdmin } from "@/hooks/useProfile";
+import { useProfile, useTotalPoints, useMonthlyPoints, useIsAdmin, useUserPointStats } from "@/hooks/useProfile";
+import GreetingHeader from "@/components/GreetingHeader";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ColumnPreview {
@@ -113,6 +114,7 @@ const Dashboard = () => {
 
   const { data: profile } = useProfile();
   const { data: totalPoints = 0 } = useTotalPoints();
+  const { data: pointStats = { total: 0, earned: 0, used: 0 } } = useUserPointStats();
   const { data: monthlyPoints = 0 } = useMonthlyPoints();
   const { data: isAdmin = false } = useIsAdmin();
   const { streak } = useLoginBonus(user?.id);
@@ -128,6 +130,35 @@ const Dashboard = () => {
       if (!user) return 0;
       const { data } = await supabase.from("shifts").select("id").eq("user_id", user.id).gte("shift_date", monthStartLabel);
       return data?.length ?? 0;
+    },
+    enabled: !!user,
+  });
+
+  // Monthly hours sum (実績サマリー用)
+  const { data: monthlyHours = 0 } = useQuery({
+    queryKey: ["monthlyHours", user?.id, monthStartLabel],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data } = await supabase
+        .from("shifts")
+        .select("hours")
+        .eq("user_id", user.id)
+        .gte("shift_date", monthStartLabel);
+      return (data ?? []).reduce((sum, r) => sum + (r.hours ?? 0), 0);
+    },
+    enabled: !!user,
+  });
+
+  // Badge count (取得済みバッジ数)
+  const { data: badgeCount = 0 } = useQuery({
+    queryKey: ["userAchievementsCount", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { count } = await supabase
+        .from("user_achievements")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+      return count ?? 0;
     },
     enabled: !!user,
   });
@@ -174,7 +205,15 @@ const Dashboard = () => {
   };
 
   return (
-    <AppLayout title={<img src={appLogo} alt="介護職応援ポイント" className="h-14" />}>
+    <AppLayout
+      bgClassName="bg-gradient-sakura-bg"
+      title={
+        <div className="flex items-center justify-between gap-3 w-full">
+          <img src={appLogo} alt="介護職応援ポイント" className="h-12 sm:h-14 shrink-0" />
+          {user && <GreetingHeader displayName={profile?.display_name} />}
+        </div>
+      }
+    >
       <ProfileCompletionBanner profile={profile} />
       <CampaignBanner profile={profile} />
 
@@ -215,20 +254,71 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Points Hero */}
-      <Card data-tour="dashboard-points" className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6 animate-pulse-glow">
-        <CardContent className="p-6 text-center">
-          <p className="text-primary-foreground/70 text-sm font-medium mb-1">累計ポイント</p>
-          <div className="flex items-center justify-center gap-2">
-            <Coins className="h-8 w-8 text-reward-gold" />
-            <span className="text-4xl font-extrabold text-primary-foreground tracking-tight">
-              {totalPoints.toLocaleString()}
-            </span>
-            <span className="text-primary-foreground/70 text-sm mt-2">pt</span>
+      {/* Points Hero (sakura-highlight) */}
+      <Card
+        variant="sakura-highlight"
+        data-tour="dashboard-points"
+        className="mb-6 animate-pop-in relative overflow-hidden"
+      >
+            <CardContent className="p-6 text-center">
+              <p className="text-white/85 text-xs mb-2 font-display font-bold tracking-wider">
+                ✿ あなたのポイント残高 ✿
+              </p>
+              <div className="flex items-baseline justify-center gap-2 mb-1">
+                <Coins className="h-8 w-8 text-gold self-center" />
+                <span className="text-5xl font-display font-black text-white tracking-tight leading-none">
+                  {pointStats.total.toLocaleString()}
+                </span>
+                <span className="text-white/85 text-xl font-display font-bold">
+                  pt
+                </span>
+              </div>
+              <p className="text-white/80 text-xs">
+                ¥{pointStats.total.toLocaleString()} 相当
+              </p>
+
+              {/* ミニ統計 */}
+              <div className="mt-3 pt-3 border-t border-white/20 flex justify-center gap-6 text-xs font-display font-bold text-white/85">
+                <span>
+                  累計獲得{" "}
+                  <span className="font-black">
+                    +{pointStats.earned.toLocaleString()}
+                  </span>
+                </span>
+                <span>
+                  使用{" "}
+                  <span className="font-black">
+                    -{pointStats.used.toLocaleString()}
+                  </span>
+                </span>
+              </div>
+            </CardContent>
+      </Card>
+
+      {/* 実績サマリー (Quick Actions の上) */}
+      <Card
+        variant="sakura-tappable"
+        className="mb-5"
+        onClick={() => navigate("/achievements")}
+      >
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-gradient-sakura-celebration flex items-center justify-center shrink-0">
+            <Trophy className="h-5 w-5 text-white" />
           </div>
-          <p className="text-primary-foreground/60 text-xs mt-2">
-            ¥{totalPoints.toLocaleString()} 相当
-          </p>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-bold text-sm text-navy">あなたの実績</p>
+            <div className="flex items-center gap-3 mt-0.5">
+              <span className="text-xs text-muted-foreground">
+                今月の稼働: <strong className="text-coral font-display font-black">{monthlyHours}時間</strong> ⭐
+              </span>
+              <span className="text-xs text-muted-foreground">
+                バッジ: <strong className="text-coral font-display font-black">{badgeCount}個</strong>
+              </span>
+            </div>
+          </div>
+          <span className="text-xs text-coral font-display font-bold whitespace-nowrap">
+            もっと見る →
+          </span>
         </CardContent>
       </Card>
 

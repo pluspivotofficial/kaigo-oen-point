@@ -12,6 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import { resetTutorials } from "@/components/AppTutorial";
+import { useNavigate } from "react-router-dom";
+import { useAchievement } from "@/contexts/AchievementContext";
+import { Trophy } from "lucide-react";
 
 interface ProfileData {
   display_name: string | null;
@@ -106,7 +109,9 @@ const isFieldFilled = (key: keyof ProfileData, value: any): boolean => {
 };
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
+  const { checkAchievements } = useAchievement();
   const [profile, setProfile] = useState<ProfileData>({
     display_name: null, full_name: null, address: null, date_of_birth: null,
     phone_number: null, gender: null, current_status: null, current_job: null,
@@ -284,6 +289,9 @@ const ProfilePage = () => {
       title: "プロフィールを保存しました！",
       description: newPoints > 0 ? `+${newPoints}ポイント獲得しました🎉` : undefined,
     });
+
+    // バッジ判定 (profile_complete 等)
+    checkAchievements();
   };
 
   const renderFieldCheck = (key: keyof ProfileData) => {
@@ -520,6 +528,16 @@ const ProfilePage = () => {
 
       <Button onClick={handleSave} variant="sakura" className="w-full" size="lg" disabled={saving}>
         {saving ? "保存中..." : "プロフィールを保存する"}
+      </Button>
+
+      {/* 実績ページへのリンク */}
+      <Button
+        variant="outline"
+        className="w-full mt-3"
+        onClick={() => navigate("/achievements")}
+      >
+        <Trophy className="h-4 w-4 mr-1 text-coral" />
+        実績バッジを見る
       </Button>
 
       <Button

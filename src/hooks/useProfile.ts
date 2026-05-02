@@ -35,6 +35,34 @@ export const useTotalPoints = () => {
   });
 };
 
+/**
+ * total / earned / used を一括取得 (Dashboard ヒーローのミニ統計用)
+ * earned: points > 0 の合計、used: points < 0 の絶対値合計
+ */
+export const useUserPointStats = () => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["userPointStats", user?.id],
+    queryFn: async () => {
+      if (!user) return { total: 0, earned: 0, used: 0 };
+      const { data } = await supabase
+        .from("points_history")
+        .select("points")
+        .eq("user_id", user.id);
+      let total = 0;
+      let earned = 0;
+      let used = 0;
+      (data ?? []).forEach((r) => {
+        total += r.points;
+        if (r.points > 0) earned += r.points;
+        else if (r.points < 0) used += Math.abs(r.points);
+      });
+      return { total, earned, used };
+    },
+    enabled: !!user,
+  });
+};
+
 export const useMonthlyPoints = () => {
   const { user } = useAuth();
   const now = new Date();

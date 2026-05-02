@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getRandomPraise } from "@/lib/shiftMessages";
 import { useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
+import { useAchievement } from "@/contexts/AchievementContext";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -38,6 +39,7 @@ interface ShiftRow {
 }
 
 const ShiftPage = () => {
+  const { checkAchievements } = useAchievement();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -239,6 +241,8 @@ const ShiftPage = () => {
         description: `${selectedDate} ${config.label}（+${pts}pt）`,
       });
       advanceToNextDay(selectedDate);
+      // バッジ判定 (first_shift / monthly_*h / total_*h)
+      checkAchievements();
     }
   };
 
