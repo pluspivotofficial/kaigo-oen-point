@@ -117,7 +117,7 @@ const AdminLayout = ({ children, title }: { children: React.ReactNode; title?: s
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="font-sans min-h-screen bg-background flex">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card">
         <div className="px-6 py-5 border-b border-border">

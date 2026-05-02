@@ -17,6 +17,10 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         cta: "bg-secondary text-secondary-foreground hover:bg-secondary/90 font-semibold shadow-lg shadow-secondary/25 transition-all duration-200",
         "cta-outline": "border-2 border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground font-semibold transition-all duration-200",
+        sakura:
+          "bg-gradient-sakura-coral text-white font-display font-black rounded-full shadow-sakura-pop hover:scale-105 active:scale-95 transition-transform",
+        "sakura-secondary":
+          "bg-white text-coral border-2 border-coral font-display font-bold rounded-full hover:bg-coral/5 transition-colors",
       },
       size: {
         default: "h-10 px-4 py-2",

@@ -86,6 +86,17 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Noto Sans JP', 'Inter', system-ui, sans-serif;
+    /* ユーザーアプリ向けは Zen Kaku Gothic New をデフォルト。
+       管理画面 (AdminLayout) は font-sans クラスで Noto Sans JP に明示上書き。 */
+    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
+  }
+
+  /* 視覚過敏対応: ユーザー設定で animation を弱める */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

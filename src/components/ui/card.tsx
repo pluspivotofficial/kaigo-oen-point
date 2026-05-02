@@ -1,10 +1,38 @@
 import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)} {...props} />
-));
+// 既存の default 挙動を保持しつつ、sakura-* バリアントを追加
+const cardVariants = cva("bg-card text-card-foreground", {
+  variants: {
+    variant: {
+      default: "rounded-lg border shadow-sm",
+      sakura: "rounded-sakura-md shadow-sakura-card bg-white",
+      "sakura-tappable":
+        "rounded-sakura-md shadow-sakura-card bg-white border border-transparent hover:border-pink-deep hover:-translate-y-0.5 transition-all cursor-pointer",
+      "sakura-highlight":
+        "rounded-sakura-lg shadow-sakura-celebration bg-gradient-sakura-celebration text-white",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
+export interface CardProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(cardVariants({ variant }), className)}
+      {...props}
+    />
+  ),
+);
 Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
@@ -40,4 +68,12 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardFooter.displayName = "CardFooter";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  cardVariants,
+};
