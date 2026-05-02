@@ -10,7 +10,7 @@ import AppLayout from "@/components/AppLayout";
 
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
   pending: { label: "申請中", variant: "secondary" },
-  completed_registered: { label: "取得完了（+100pt）", variant: "default" },
+  completed_registered: { label: "登録完了", variant: "default" },
 };
 
 function generateCode() {
@@ -95,13 +95,27 @@ const ReferralPage = () => {
   };
 
   return (
-    <AppLayout title="友人紹介">
-      {/* Reward Banner */}
-      <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6">
+    <AppLayout bgClassName="bg-gradient-sakura-bg" title="友人紹介">
+      {/* セクションキッカー */}
+      <div className="text-center mb-3">
+        <p className="text-xs font-display font-bold text-coral tracking-widest">
+          ✿ 仲間と一緒に応援 ✿
+        </p>
+        <h2 className="text-base font-display font-bold text-navy mt-1">
+          友達に紹介して、一緒にポイントを貯めよう 🌸
+        </h2>
+      </div>
+
+      {/* Reward Banner (sakura-highlight + animate-pop-in) */}
+      <Card variant="sakura-highlight" className="mb-6 animate-pop-in">
         <CardContent className="p-6 text-center">
-          <Gift className="h-10 w-10 text-primary-foreground mx-auto mb-3" />
-          <h2 className="text-xl font-bold text-primary-foreground mb-1">紹介で最大 600 ポイント！</h2>
-          <p className="text-primary-foreground/70 text-sm">登録完了で100pt + プロフィール入力完了で500pt</p>
+          <Gift className="h-10 w-10 text-white mx-auto mb-3" />
+          <h2 className="text-2xl font-display font-black text-white mb-1">
+            紹介で最大 <span className="text-gold">600</span> ポイント！
+          </h2>
+          <p className="text-white/85 text-sm font-display">
+            登録完了で <strong>+100pt</strong> + プロフィール完了で <strong>+500pt</strong>
+          </p>
         </CardContent>
       </Card>
 
@@ -121,47 +135,55 @@ const ReferralPage = () => {
         </CardContent>
       </Card>
 
-      {/* Explanation */}
-      <Card className="mb-5">
+      {/* Step1/Step2 Explanation (sakura-tappable) */}
+      <Card variant="sakura-tappable" className="mb-5">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start gap-3">
-            <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+            <span className="h-7 w-7 rounded-full bg-gradient-sakura-coral text-white text-xs font-display font-black flex items-center justify-center shrink-0 mt-0.5">
+              1
+            </span>
             <div>
-              <p className="font-semibold text-sm">友人が登録完了で <span className="text-primary">+100pt</span></p>
-              <p className="text-xs text-muted-foreground">管理者承認後にポイントが付与されます</p>
+              <p className="font-display font-bold text-sm">
+                友人が登録完了で <span className="text-coral font-black">+100pt</span>
+              </p>
+              <p className="text-xs text-muted-foreground">招待コード経由で登録すると即座に付与されます</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
-            <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+            <span className="h-7 w-7 rounded-full bg-gradient-sakura-coral text-white text-xs font-display font-black flex items-center justify-center shrink-0 mt-0.5">
+              2
+            </span>
             <div>
-              <p className="font-semibold text-sm">紹介先がプロフィール⑨まで入力で <span className="text-primary">+500pt</span></p>
-              <p className="text-xs text-muted-foreground">紹介先が基本情報①〜⑤ + お仕事状況⑥〜⑨を入力すると、紹介元に500pt付与されます</p>
+              <p className="font-display font-bold text-sm">
+                紹介先がプロフィール⑨まで入力で <span className="text-coral font-black">+500pt</span>
+              </p>
+              <p className="text-xs text-muted-foreground">紹介先が基本情報①〜⑤ + お仕事状況⑥〜⑨を入力すると付与</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Limit info - Meter */}
-      <Card data-tour="referral-meter" className="mb-5">
+      <Card variant="sakura" data-tour="referral-meter" className="mb-5">
         <CardContent className="p-4">
           <div className="flex items-end justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">紹介枠の利用状況</span>
+              <Users className="h-4 w-4 text-coral" />
+              <span className="text-sm font-display font-bold">紹介枠の利用状況</span>
             </div>
             <span className="text-sm">
-              <strong className="text-2xl text-primary">{referralCount}</strong>
+              <strong className="text-2xl font-display font-black text-coral">{referralCount}</strong>
               <span className="text-muted-foreground"> / 5 枠</span>
             </span>
           </div>
-          <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+          <div className="w-full h-3 bg-pink-soft rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
                 referralCount >= 5
                   ? "bg-destructive"
                   : referralCount >= 4
-                  ? "bg-reward-gold"
-                  : "bg-primary"
+                  ? "bg-gold"
+                  : "bg-gradient-sakura-coral"
               }`}
               style={{ width: `${Math.min((referralCount / 5) * 100, 100)}%` }}
             />
@@ -175,19 +197,19 @@ const ReferralPage = () => {
       </Card>
 
       {/* Create Link Button with Visual Steps */}
-      <Card className="mb-5">
+      <Card variant="sakura" className="mb-5">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Share2 className="h-4 w-4" />
+          <CardTitle className="text-base font-display font-bold flex items-center gap-2">
+            <Share2 className="h-4 w-4 text-coral" />
             招待リンクを作成
           </CardTitle>
         </CardHeader>
         <CardContent>
           {/* Visual How-To Steps */}
-          <div className="bg-muted/50 rounded-lg p-4 mb-4 space-y-3">
-            <p className="text-xs font-semibold text-foreground mb-2">📋 招待リンクの送り方</p>
+          <div className="bg-cream rounded-sakura-md p-4 mb-4 space-y-3">
+            <p className="text-xs font-display font-bold text-foreground mb-2">📋 招待リンクの送り方</p>
             <div className="flex items-start gap-3">
-              <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">
+              <div className="h-7 w-7 rounded-full bg-gradient-sakura-coral text-white text-xs font-display font-black flex items-center justify-center shrink-0">
                 ①
               </div>
               <div className="flex items-center gap-2 flex-1">
@@ -196,10 +218,10 @@ const ReferralPage = () => {
               </div>
             </div>
             <div className="flex justify-center">
-              <div className="h-4 border-l-2 border-dashed border-muted-foreground/30" />
+              <div className="h-4 border-l-2 border-dashed border-pink-mid" />
             </div>
             <div className="flex items-start gap-3">
-              <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center shrink-0">
+              <div className="h-7 w-7 rounded-full bg-gradient-sakura-coral text-white text-xs font-display font-black flex items-center justify-center shrink-0">
                 ②
               </div>
               <div className="flex items-center gap-2 flex-1">
@@ -212,7 +234,13 @@ const ReferralPage = () => {
             </div>
           </div>
 
-          <Button className="w-full gap-2" size="lg" disabled={submitting || referralCount >= 5} onClick={handleCreateLink}>
+          <Button
+            variant="sakura"
+            className="w-full gap-2"
+            size="lg"
+            disabled={submitting || referralCount >= 5}
+            onClick={handleCreateLink}
+          >
             <Link2 className="h-4 w-4" />
             {referralCount >= 5 ? "紹介上限に達しました" : submitting ? "作成中..." : "招待リンクを作成してコピー"}
           </Button>
@@ -221,26 +249,45 @@ const ReferralPage = () => {
 
       {/* Referral History */}
       {referrals.length > 0 && (
-        <Card className="mb-5">
+        <Card variant="sakura" className="mb-5">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">紹介履歴</CardTitle>
+            <CardTitle className="text-base font-display font-bold">紹介履歴</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {referrals.map((r) => {
               const status = STATUS_MAP[r.status] || STATUS_MAP.pending;
               const pts = referralPoints[r.id];
               const displayName = r.friend_name || "未登録";
+              const step1Done = !!r.signup_bonus_granted_at;
+              const step2Done = !!r.profile_bonus_granted_at;
               return (
-                <div key={r.id} className="p-3 rounded-lg bg-muted space-y-2">
+                <div key={r.id} className="p-3 rounded-sakura-md bg-cream space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">{displayName}</p>
+                      <p className="text-sm font-display font-bold">{displayName}</p>
                       <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("ja-JP")}</p>
                     </div>
                     <Badge variant={status.variant} className="text-xs">
                       {status.label}
                     </Badge>
                   </div>
+
+                  {/* Step1/Step2 状態バッジ */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge
+                      variant={step1Done ? "sakura-coral" : "outline"}
+                      className="text-[10px]"
+                    >
+                      {step1Done ? "✓ Step1 +100pt" : "Step1 未達成"}
+                    </Badge>
+                    <Badge
+                      variant={step2Done ? "sakura-gold" : "outline"}
+                      className="text-[10px]"
+                    >
+                      {step2Done ? "✓ Step2 +500pt" : "Step2 未達成"}
+                    </Badge>
+                  </div>
+
                   {pts !== undefined && pts > 0 && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Coins className="h-3 w-3" />
@@ -249,7 +296,7 @@ const ReferralPage = () => {
                   )}
                   {r.referral_code && r.status === "pending" && !r.referred_user_id && (
                     <Button
-                      variant="outline"
+                      variant="sakura-secondary"
                       size="sm"
                       className="w-full text-xs gap-1.5"
                       onClick={() => handleCopyLink(r)}
@@ -266,10 +313,10 @@ const ReferralPage = () => {
       )}
 
       {/* Stats */}
-      <Card>
+      <Card variant="sakura">
         <CardContent className="p-4 flex items-center gap-3">
-          <Users className="h-5 w-5 text-muted-foreground" />
-          <span className="text-sm">これまでの紹介: <strong>{referralCount}人</strong></span>
+          <Users className="h-5 w-5 text-coral" />
+          <span className="text-sm font-display">これまでの紹介: <strong className="font-black text-coral">{referralCount}</strong>人</span>
         </CardContent>
       </Card>
     </AppLayout>
