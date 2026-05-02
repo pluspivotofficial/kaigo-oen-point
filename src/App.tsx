@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AchievementProvider } from "@/contexts/AchievementContext";
 import Dashboard from "./pages/Dashboard";
 import ShiftPage from "./pages/ShiftPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -11,6 +12,7 @@ import PointsPage from "./pages/PointsPage";
 import ReferralPage from "./pages/ReferralPage";
 import AuthPage from "./pages/AuthPage";
 import PrefectureRankingPage from "./pages/PrefectureRankingPage";
+import Achievements from "./pages/Achievements";
 import ColumnDetailPage from "./pages/ColumnDetailPage";
 import QuestionsPage from "./pages/QuestionsPage";
 import QuestionDetailPage from "./pages/QuestionDetailPage";
@@ -52,6 +54,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AchievementProvider>
           <Routes>
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -60,6 +63,7 @@ const App = () => (
             <Route path="/points" element={<ProtectedRoute><PointsPage /></ProtectedRoute>} />
             <Route path="/referral" element={<ProtectedRoute><ReferralPage /></ProtectedRoute>} />
             <Route path="/ranking" element={<ProtectedRoute><PrefectureRankingPage /></ProtectedRoute>} />
+            <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
             <Route path="/column/:id" element={<ProtectedRoute><ColumnDetailPage /></ProtectedRoute>} />
             <Route path="/questions" element={<ProtectedRoute><QuestionsPage /></ProtectedRoute>} />
             <Route path="/questions/:id" element={<ProtectedRoute><QuestionDetailPage /></ProtectedRoute>} />
@@ -78,6 +82,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </AchievementProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
