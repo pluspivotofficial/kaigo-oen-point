@@ -292,9 +292,16 @@ const ProfilePage = () => {
   };
 
   return (
-    <AppLayout title="プロフィール">
+    <AppLayout bgClassName="bg-gradient-sakura-bg" title="プロフィール">
+      {/* セクションキッカー */}
+      <div className="text-center mb-3">
+        <p className="text-xs font-display font-bold text-coral tracking-widest">
+          ✿ プロフィール ✿
+        </p>
+      </div>
+
       {/* Progress Overview */}
-      <Card className="mb-5">
+      <Card variant="sakura" className="mb-5">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">基本情報</span>
@@ -511,7 +518,7 @@ const ProfilePage = () => {
         </Card>
       )}
 
-      <Button onClick={handleSave} className="w-full" size="lg" disabled={saving}>
+      <Button onClick={handleSave} variant="sakura" className="w-full" size="lg" disabled={saving}>
         {saving ? "保存中..." : "プロフィールを保存する"}
       </Button>
 
