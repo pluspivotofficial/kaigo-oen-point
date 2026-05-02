@@ -62,28 +62,51 @@ const PointsPage = () => {
     });
   }, [history]);
 
+  // 累計獲得 / 使用 (sakura ミニ統計用)
+  const earned = history.reduce((sum, h) => (h.points > 0 ? sum + h.points : sum), 0);
+  const used = history.reduce((sum, h) => (h.points < 0 ? sum + Math.abs(h.points) : sum), 0);
+
   return (
-    <AppLayout title="ポイント">
-      <Card className="bg-gradient-to-br from-primary to-primary/80 border-0 mb-6">
+    <AppLayout bgClassName="bg-gradient-sakura-bg" title="ポイント">
+      {/* セクションキッカー */}
+      <div className="text-center mb-3">
+        <p className="text-xs font-display font-bold text-coral tracking-widest">
+          ✿ ポイント履歴 ✿
+        </p>
+      </div>
+
+      <Card variant="sakura-highlight" className="mb-6 animate-pop-in">
         <CardContent className="p-6 text-center">
-          <p className="text-primary-foreground/70 text-sm mb-1">累計ポイント</p>
-          <div className="flex items-center justify-center gap-2">
-            <Coins className="h-7 w-7 text-reward-gold" />
-            <span className="text-3xl font-extrabold text-primary-foreground">
+          <p className="text-white/85 text-xs mb-1 font-display font-bold tracking-wider">
+            あなたのポイント残高
+          </p>
+          <div className="flex items-baseline justify-center gap-2">
+            <Coins className="h-7 w-7 text-gold self-center" />
+            <span className="text-4xl font-display font-black text-white tracking-tight leading-none">
               {totalPoints.toLocaleString()}
             </span>
-            <span className="text-primary-foreground/70 text-sm mt-1">pt</span>
+            <span className="text-white/85 text-base font-display font-bold">pt</span>
           </div>
-          <p className="text-primary-foreground/60 text-xs mt-1">¥{totalPoints.toLocaleString()} 相当</p>
+          <p className="text-white/80 text-xs mt-1">
+            ¥{totalPoints.toLocaleString()} 相当
+          </p>
+          <div className="mt-3 pt-3 border-t border-white/20 flex justify-center gap-6 text-xs font-display font-bold text-white/85">
+            <span>
+              累計獲得 <span className="font-black">+{earned.toLocaleString()}</span>
+            </span>
+            <span>
+              使用 <span className="font-black">-{used.toLocaleString()}</span>
+            </span>
+          </div>
         </CardContent>
       </Card>
 
       {/* 累計推移グラフ */}
       {chartData.length > 0 && (
-        <Card data-tour="points-chart" className="mb-6">
+        <Card variant="sakura" data-tour="points-chart" className="mb-6">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base font-display font-bold flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-coral" />
               ポイント獲得推移
             </CardTitle>
           </CardHeader>
@@ -121,10 +144,10 @@ const PointsPage = () => {
       )}
 
       {/* ポイントを獲得できる導線 */}
-      <Card data-tour="points-earn" className="mb-6">
+      <Card variant="sakura" data-tour="points-earn" className="mb-6">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Gift className="h-4 w-4 text-secondary" />
+          <CardTitle className="text-base font-display font-bold flex items-center gap-2">
+            <Gift className="h-4 w-4 text-coral" />
             ポイントを獲得する
           </CardTitle>
         </CardHeader>
@@ -173,9 +196,9 @@ const PointsPage = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card variant="sakura">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">ポイント履歴</CardTitle>
+          <CardTitle className="text-base font-display font-bold">ポイント履歴</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
           {history.length === 0 ? (
@@ -186,35 +209,37 @@ const PointsPage = () => {
               </p>
             </div>
           ) : (
-            history.map((item) => (
-              <div key={item.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                    item.type === "redeem"
-                      ? "bg-destructive/10"
-                      : item.type === "bonus"
-                      ? "bg-reward-purple/10"
-                      : "bg-secondary/10"
-                  }`}>
-                    {item.type === "redeem" ? (
-                      <ArrowDownRight className="h-4 w-4 text-destructive" />
-                    ) : (
-                      <ArrowUpRight className={`h-4 w-4 ${item.type === "bonus" ? "text-reward-purple" : "text-secondary"}`} />
-                    )}
+            history.map((item) => {
+              const isAdminOp = (item as any).admin_action === true;
+              const isPositive = item.points > 0;
+              const badgeVariant: "sakura-coral" | "sakura-gold" | "sakura-pink" = isAdminOp
+                ? "sakura-coral"
+                : isPositive
+                ? "sakura-gold"
+                : "sakura-pink";
+              return (
+                <div key={item.id} className="flex items-center justify-between py-3 border-b border-pink-soft last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                      isPositive ? "bg-gold/10" : "bg-pink-soft"
+                    }`}>
+                      {isPositive ? (
+                        <ArrowUpRight className="h-4 w-4 text-gold-deep" />
+                      ) : (
+                        <ArrowDownRight className="h-4 w-4 text-coral" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-display font-bold">{item.description}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString("ja-JP")}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{item.description}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString("ja-JP")}</p>
-                  </div>
+                  <Badge variant={badgeVariant} className="font-mono text-xs">
+                    {isPositive ? "+" : ""}{item.points.toLocaleString()} pt
+                  </Badge>
                 </div>
-                <Badge
-                  variant={item.points > 0 ? "default" : "destructive"}
-                  className="font-mono text-xs"
-                >
-                  {item.points > 0 ? "+" : ""}{item.points.toLocaleString()} pt
-                </Badge>
-              </div>
-            ))
+              );
+            })
           )}
         </CardContent>
       </Card>
