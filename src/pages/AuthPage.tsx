@@ -160,11 +160,19 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-5 py-8">
+    <div className="font-body min-h-screen bg-gradient-sakura-bg flex items-center justify-center px-5 py-8">
       <div className="w-full max-w-sm">
         <div className="text-center mb-6">
           <img src={appLogo} alt="介護職応援ポイント" className="h-28 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground mt-1">介護派遣ポイ活アプリ</p>
+          <p className="text-xs font-display font-bold text-coral tracking-widest mb-2">
+            ✿ ようこそ ✿
+          </p>
+          <h1 className="text-2xl font-display font-black text-navy leading-tight">
+            毎日、コツコツ、応援。
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1 font-body">
+            介護のお仕事をポイントに。
+          </p>
         </div>
 
         {referralCode && !isLogin && (
@@ -217,9 +225,9 @@ const AuthPage = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card variant="sakura">
           <CardHeader className="pb-4">
-            <CardTitle className="text-base text-center">
+            <CardTitle className="text-base text-center font-display font-bold">
               {isLogin ? "ログイン" : "新規登録"}
             </CardTitle>
           </CardHeader>
@@ -290,7 +298,13 @@ const AuthPage = () => {
                 <Label htmlFor="password">パスワード</Label>
                 <Input id="password" type="password" placeholder="6文字以上" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
               </div>
-              <Button type="submit" className="w-full" size="lg" disabled={loading || (!isLogin && !termsAgreed)}>
+              <Button
+                type="submit"
+                variant="sakura"
+                className="w-full"
+                size="lg"
+                disabled={loading || (!isLogin && !termsAgreed)}
+              >
                 {isLogin ? (
                   <><LogIn className="h-4 w-4 mr-2" />ログイン</>
                 ) : (
