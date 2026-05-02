@@ -261,11 +261,18 @@ const ShiftPage = () => {
   const selectedShiftForDate = selectedDate ? shiftByDate[selectedDate] : null;
 
   return (
-    <AppLayout title="シフト登録">
-      <Card data-tour="shift-calendar" className="mb-4">
+    <AppLayout bgClassName="bg-gradient-sakura-bg" title="シフト登録">
+      {/* セクションキッカー */}
+      <div className="text-center mb-3">
+        <p className="text-xs font-display font-bold text-coral tracking-widest">
+          ✿ シフトを登録 ✿
+        </p>
+      </div>
+
+      <Card variant="sakura" data-tour="shift-calendar" className="mb-4 overflow-hidden">
         <CardContent className="p-0">
           {/* Month header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-pink-100 rounded-t-lg">
+          <div className="flex items-center justify-between px-4 py-3 bg-pink-soft rounded-t-sakura-md">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={prevMonth}>
                 <ChevronLeft className="h-5 w-5" />
@@ -339,10 +346,10 @@ const ShiftPage = () => {
 
       {/* Shift input section */}
       {selectedDate && (
-        <Card className="mb-4">
+        <Card variant="sakura" className="mb-4">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-bold text-foreground">
+              <p className="text-sm font-display font-bold text-foreground">
                 {(() => {
                   const d = new Date(selectedDate + "T00:00:00");
                   return `${d.getMonth() + 1}/${d.getDate()}(${DAYS_JP[d.getDay()]}) のシフト入力`;
