@@ -27,6 +27,8 @@ import AdminQuestionsPage from "./pages/AdminQuestionsPage";
 import AdminReferralsPage from "./pages/AdminReferralsPage";
 import AdminPointsPage from "./pages/AdminPointsPage";
 import AdminNoticesPage from "./pages/AdminNoticesPage";
+import AdminEmailCampaignsPage from "./pages/AdminEmailCampaignsPage";
+import AdminEmailCampaignEditPage from "./pages/AdminEmailCampaignEditPage";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import NotFound from "./pages/NotFound";
 
@@ -81,6 +83,8 @@ const App = () => (
             <Route path="/admin/referrals" element={<ProtectedAdminRoute><AdminReferralsPage /></ProtectedAdminRoute>} />
             <Route path="/admin/points" element={<ProtectedAdminRoute><AdminPointsPage /></ProtectedAdminRoute>} />
             <Route path="/admin/notices" element={<ProtectedAdminRoute><AdminNoticesPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/email-campaigns" element={<ProtectedAdminRoute><AdminEmailCampaignsPage /></ProtectedAdminRoute>} />
+            <Route path="/admin/email-campaigns/:id" element={<ProtectedAdminRoute><AdminEmailCampaignEditPage /></ProtectedAdminRoute>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

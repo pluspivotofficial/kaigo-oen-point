@@ -14,6 +14,7 @@ import {
   Coins,
   Share2,
   Sparkles,
+  Mail,
   LogOut,
   Menu,
 } from "lucide-react";
@@ -57,6 +58,7 @@ const navGroups: NavGroup[] = [
       { path: "/admin/points", label: "ポイント", icon: Coins },
       { path: "/admin/referrals", label: "紹介", icon: Share2 },
       { path: "/admin/campaigns", label: "キャンペーン", icon: Sparkles },
+      { path: "/admin/email-campaigns", label: "メール配信", icon: Mail },
     ],
   },
 ];
