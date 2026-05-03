@@ -8,8 +8,8 @@ import {
   pickRandomMessageByCategory,
   renderMessage,
   type MessageCategory,
-  type MitsubaMessage,
-} from "@/lib/mitsubaMessages";
+  type NaoMessage,
+} from "@/lib/naoMessages";
 
 // 当日の YYYY-MM-DD 文字列 (ローカル時刻基準)
 const todayDateStr = (): string => {
@@ -25,10 +25,10 @@ const todayStartIso = (): string => {
 };
 
 const cacheKey = (userId: string, date: string): string =>
-  `mitsuba:msg:${userId}:${date}`;
-const lastSeenKey = (userId: string): string => `mitsuba:lastSeen:${userId}`;
+  `nao:msg:${userId}:${date}`;
+const lastSeenKey = (userId: string): string => `nao:lastSeen:${userId}`;
 
-interface MitsubaContext {
+interface NaoContext {
   hasBadgeToday: boolean;
   hasShiftToday: boolean;
   pointMilestone: 100 | 500 | 1000 | 5000 | null;
@@ -40,7 +40,7 @@ interface MitsubaContext {
 }
 
 // 優先度順にカテゴリを確定
-const determineCategory = (ctx: MitsubaContext): MessageCategory => {
+const determineCategory = (ctx: NaoContext): MessageCategory => {
   if (ctx.hasBadgeToday) return "badge_earned";
   if (ctx.hasShiftToday) return "shift_added";
   if (ctx.pointMilestone === 5000) return "milestone_5000";
@@ -58,18 +58,18 @@ const determineCategory = (ctx: MitsubaContext): MessageCategory => {
   return "night";
 };
 
-const MitsubaMessage = () => {
+const NaoMessage = () => {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { data: totalPoints = 0 } = useTotalPoints();
-  const [message, setMessage] = useState<MitsubaMessage | null>(null);
+  const [message, setMessage] = useState<NaoMessage | null>(null);
 
   const today = todayDateStr();
   const todayIsoStart = todayStartIso();
 
   // 当日の各シグナル取得
   const { data: hasBadgeToday = false } = useQuery({
-    queryKey: ["mitsuba.badgeToday", user?.id, today],
+    queryKey: ["nao.badgeToday", user?.id, today],
     queryFn: async () => {
       if (!user) return false;
       const { count } = await supabase
@@ -84,7 +84,7 @@ const MitsubaMessage = () => {
   });
 
   const { data: hasShiftToday = false } = useQuery({
-    queryKey: ["mitsuba.shiftToday", user?.id, today],
+    queryKey: ["nao.shiftToday", user?.id, today],
     queryFn: async () => {
       if (!user) return false;
       const { count } = await supabase
@@ -100,7 +100,7 @@ const MitsubaMessage = () => {
 
   // ポイント節目: 当日の earn 合計を引いた前日値と totalPoints の差で節目跨ぎを判定
   const { data: pointMilestone = null } = useQuery({
-    queryKey: ["mitsuba.milestone", user?.id, today, totalPoints],
+    queryKey: ["nao.milestone", user?.id, today, totalPoints],
     queryFn: async () => {
       if (!user || totalPoints === 0) return null;
       const { data } = await supabase
@@ -127,7 +127,7 @@ const MitsubaMessage = () => {
 
   // 連続ログイン (login_streaks の current_streak のみ参照、更新は useLoginBonus 任せ)
   const { data: streakValue = 0 } = useQuery({
-    queryKey: ["mitsuba.streak", user?.id, today],
+    queryKey: ["nao.streak", user?.id, today],
     queryFn: async () => {
       if (!user) return 0;
       const { data } = await supabase
@@ -146,7 +146,7 @@ const MitsubaMessage = () => {
     if (!user || !profile) return;
 
     // キャッシュ確認
-    let cached: MitsubaMessage | null = null;
+    let cached: NaoMessage | null = null;
     try {
       const raw = localStorage.getItem(cacheKey(user.id, today));
       if (raw) {
@@ -189,7 +189,7 @@ const MitsubaMessage = () => {
         ) <= 7
       : false;
 
-    const ctx: MitsubaContext = {
+    const ctx: NaoContext = {
       hasBadgeToday,
       hasShiftToday,
       pointMilestone,
@@ -231,7 +231,7 @@ const MitsubaMessage = () => {
   return (
     <div className="mb-5 rounded-2xl border border-pink-soft bg-gradient-to-br from-coral/5 via-pink-soft/40 to-cream p-4 shadow-sakura-soft animate-pop-in">
       <p className="text-xs font-display font-bold text-coral tracking-wider mb-2">
-        ✿ みつば
+        ✿ なお
       </p>
       <p className="text-sm font-body text-navy/85 leading-relaxed whitespace-pre-line">
         {text}
@@ -240,4 +240,4 @@ const MitsubaMessage = () => {
   );
 };
 
-export default MitsubaMessage;
+export default NaoMessage;

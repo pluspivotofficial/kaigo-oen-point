@@ -1,7 +1,7 @@
-// みつばキャラクターのメッセージ集
+// なおキャラクターのメッセージ集
 //
 // キャラ設定:
-// - 名前: みつば
+// - 名前: なお
 // - 性別中性的、20代、介護職応援ポイント運営の若手スタッフ
 // - 真面目、リスペクト深い、過度に明るくない
 // - 丁寧語、敬称必須、誠実
@@ -26,13 +26,13 @@ export type MessageCategory =
   | "milestone_5000"
   | "new_user"; // 登録後7日以内
 
-export interface MitsubaMessage {
+export interface NaoMessage {
   id: string;
   category: MessageCategory;
   text: string;
 }
 
-export const MITSUBA_MESSAGES: MitsubaMessage[] = [
+export const NAO_MESSAGES: NaoMessage[] = [
   // 朝 (5-10時)
   {
     id: "morning_001",
@@ -204,7 +204,7 @@ export const MITSUBA_MESSAGES: MitsubaMessage[] = [
   {
     id: "new_user_002",
     category: "new_user",
-    text: "{{name}}さん、はじめまして。みつばと申します。よろしくお願いいたします。",
+    text: "{{name}}さん、はじめまして。なおと申します。よろしくお願いいたします。",
   },
 ];
 
@@ -220,12 +220,12 @@ export const renderMessage = (
 // カテゴリから1メッセージをランダム選択
 export const pickRandomMessageByCategory = (
   category: MessageCategory
-): MitsubaMessage | null => {
-  const candidates = MITSUBA_MESSAGES.filter((m) => m.category === category);
+): NaoMessage | null => {
+  const candidates = NAO_MESSAGES.filter((m) => m.category === category);
   if (candidates.length === 0) return null;
   return candidates[Math.floor(Math.random() * candidates.length)];
 };
 
 // メッセージID指定で取得
-export const getMessageById = (id: string): MitsubaMessage | null =>
-  MITSUBA_MESSAGES.find((m) => m.id === id) ?? null;
+export const getMessageById = (id: string): NaoMessage | null =>
+  NAO_MESSAGES.find((m) => m.id === id) ?? null;
