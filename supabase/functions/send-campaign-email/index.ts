@@ -120,6 +120,12 @@ const replaceVariables = (
   return template.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? "");
 };
 
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+// Resend は 2 req/sec 制限。500ms 間隔で 1 req/sec に抑える(余裕を持って半分)。
+const RESEND_THROTTLE_MS = 500;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -357,8 +363,15 @@ Deno.serve(async (req) => {
         `[send-campaign-email] mass: total=${recipients.length} alreadySent=${alreadySent.size} toSend=${toSend.length}`
       );
 
-      // 順次送信
+      // 順次送信 (Resend 2 req/sec 制限対策で間隔を空ける)
+      let isFirst = true;
       for (const r of toSend) {
+        // 2件目以降は throttle (初回は即実行で UX 改善)
+        if (!isFirst) {
+          await sleep(RESEND_THROTTLE_MS);
+        }
+        isFirst = false;
+
         // unsubscribe トークン発行 (受信者ごと、毎回新規)
         const token = generateToken();
         const { error: tokenErr } = await adminClient
