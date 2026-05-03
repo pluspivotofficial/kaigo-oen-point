@@ -18,11 +18,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   ChevronLeft,
   Save,
   Trash2,
@@ -33,6 +28,7 @@ import {
   Pencil,
   Eye,
   Code,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
@@ -110,12 +106,28 @@ const AdminEmailCampaignEditPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testSending, setTestSending] = useState(false);
+  const [massSending, setMassSending] = useState(false);
+  const [confirmStep, setConfirmStep] = useState<"closed" | "first" | "second">(
+    "closed"
+  );
+  const [eligibleCount, setEligibleCount] = useState<number | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // form state
   const [subject, setSubject] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
+
+  // 送信中はページ離脱を警告 (Edge Function 同期送信中の中断防止)
+  useEffect(() => {
+    if (!massSending) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [massSending]);
 
   useEffect(() => {
     if (!id) return;
@@ -254,6 +266,112 @@ const AdminEmailCampaignEditPage = () => {
     });
   };
 
+  // 送信対象人数を取得 (1段目ダイアログを開く時)
+  const fetchEligibleCount = async (): Promise<number | null> => {
+    const { count, error } = await supabase
+      .from("profiles")
+      .select("user_id", { count: "exact", head: true })
+      .eq("email_opt_out", false)
+      .not("email", "is", null);
+    if (error) {
+      toast({
+        title: "送信対象の取得に失敗",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    }
+    return count ?? 0;
+  };
+
+  // 1段目ダイアログを開く: 送信対象を取得して表示
+  const openMassSendConfirm = async () => {
+    if (!validation.ok || isLocked) return;
+    const c = await fetchEligibleCount();
+    if (c === null) return;
+    setEligibleCount(c);
+    setConfirmStep("first");
+  };
+
+  // 本番送信実行
+  const handleMassSend = async () => {
+    if (!campaign || !validation.ok) return;
+    setConfirmStep("closed");
+    setMassSending(true);
+
+    // 送信前に最新内容を保存
+    const saved = await persistDraft();
+    if (!saved) {
+      setMassSending(false);
+      return;
+    }
+
+    // Edge Function 呼出 (同期送信、31名で約30〜60秒)
+    const { data, error } = await supabase.functions.invoke(
+      "send-campaign-email",
+      {
+        body: {
+          mode: "mass",
+          campaign_id: campaign.id,
+        },
+      }
+    );
+
+    setMassSending(false);
+
+    if (error) {
+      toast({
+        title: "送信に失敗しました",
+        description: error.message ?? "Edge Function 呼出エラー",
+        variant: "destructive",
+      });
+      // status は Edge Function 側で release_lock(failed) されているはず
+      // 念のため campaign を再取得
+      await refetchCampaign();
+      return;
+    }
+
+    if (data?.error) {
+      toast({
+        title: "送信に失敗しました",
+        description: data.error,
+        variant: "destructive",
+      });
+      await refetchCampaign();
+      return;
+    }
+
+    // 完了レポート
+    const sent = data?.sent ?? 0;
+    const failed = data?.failed ?? 0;
+    const status = data?.status ?? "sent";
+    const isOk = status === "sent";
+
+    toast({
+      title: isOk
+        ? `✅ 送信完了 (${sent} 件)`
+        : `⚠️ 一部失敗しました (成功 ${sent} / 失敗 ${failed})`,
+      description: isOk
+        ? "全員に送信されました。"
+        : "失敗した宛先のみ「再送信」で再試行できます。",
+      variant: isOk ? "default" : "destructive",
+    });
+
+    await refetchCampaign();
+  };
+
+  const refetchCampaign = async () => {
+    if (!campaign) return;
+    const { data } = await supabase
+      .from("email_campaigns")
+      .select(
+        "id, subject, body_html, body_text, status, sent_count, failed_count, created_at, updated_at, sent_at"
+      )
+      .eq("id", campaign.id)
+      .single();
+    if (data) setCampaign(data as EmailCampaign);
+  };
+
   const handleDelete = async () => {
     if (!campaign) return;
     setDeleting(true);
@@ -283,6 +401,14 @@ const AdminEmailCampaignEditPage = () => {
   }
 
   const badge = statusBadgeProps(campaign.status);
+  const canMassSend =
+    campaign.status === "draft" ||
+    campaign.status === "partial_failed" ||
+    campaign.status === "failed";
+  const massSendLabel =
+    campaign.status === "partial_failed" || campaign.status === "failed"
+      ? "失敗分を再送信"
+      : "全員に送信";
 
   return (
     <AdminLayout title="メール配信 / 編集">
@@ -293,6 +419,7 @@ const AdminEmailCampaignEditPage = () => {
             variant="ghost"
             size="sm"
             onClick={() => navigate("/admin/email-campaigns")}
+            disabled={massSending}
             className="gap-1"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -304,7 +431,7 @@ const AdminEmailCampaignEditPage = () => {
               variant="ghost"
               size="sm"
               onClick={() => setDeleteOpen(true)}
-              disabled={isLocked}
+              disabled={isLocked || massSending}
               className="text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-1" />
@@ -314,7 +441,20 @@ const AdminEmailCampaignEditPage = () => {
         </div>
 
         {/* 状態に応じたバナー */}
-        {isLocked && (
+        {massSending && (
+          <Card className="border-primary/60 bg-primary/10">
+            <CardContent className="p-4 flex items-start gap-3 text-sm">
+              <Loader2 className="h-5 w-5 mt-0.5 text-primary shrink-0 animate-spin" />
+              <div>
+                <p className="font-medium">本番送信中です(約1〜2分)</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  ページを閉じたりリロードしないでください。送信が完了するまでお待ちください。
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {isLocked && !massSending && (
           <Card className="border-primary/40 bg-primary/5">
             <CardContent className="p-3 flex items-start gap-2 text-sm">
               <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
@@ -461,7 +601,12 @@ const AdminEmailCampaignEditPage = () => {
               variant="outline"
               onClick={handleTestSend}
               disabled={
-                saving || testSending || isLocked || !validation.ok || !user?.email
+                saving ||
+                testSending ||
+                massSending ||
+                isLocked ||
+                !validation.ok ||
+                !user?.email
               }
               className="gap-1"
             >
@@ -475,33 +620,113 @@ const AdminEmailCampaignEditPage = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-block">
-                  <Button
-                    disabled
-                    aria-disabled
-                    className="gap-1 opacity-60 cursor-not-allowed"
-                  >
-                    <Mail className="h-4 w-4" />
-                    全員に送信 (Coming Soon)
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                本番送信は明日以降の予定です
-              </TooltipContent>
-            </Tooltip>
             <Button
               onClick={handleSave}
-              disabled={saving || testSending || isLocked || !validation.ok}
+              disabled={
+                saving || testSending || massSending || isLocked || !validation.ok
+              }
+              variant="outline"
               className="gap-1"
             >
               <Save className="h-4 w-4" />
               {saving ? "保存中..." : "下書き保存"}
             </Button>
+            <Button
+              onClick={openMassSendConfirm}
+              disabled={
+                saving ||
+                testSending ||
+                massSending ||
+                isLocked ||
+                !validation.ok ||
+                !canMassSend
+              }
+              className="gap-1"
+            >
+              {massSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  送信中... (1〜2分)
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4" />
+                  {massSendLabel}
+                </>
+              )}
+            </Button>
           </div>
         </div>
+
+        {/* 全員送信 1段目 */}
+        <AlertDialog
+          open={confirmStep === "first"}
+          onOpenChange={(o) => !o && setConfirmStep("closed")}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>本番送信の確認(1/2)</AlertDialogTitle>
+              <AlertDialogDescription>
+                {eligibleCount !== null
+                  ? `${eligibleCount}人に送信しますがよろしいですか?`
+                  : "送信対象を確認しています..."}
+                <br />
+                <span className="text-xs text-muted-foreground">
+                  対象: 配信停止していない、メアド登録済みのユーザー
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => {
+                  e.preventDefault();
+                  setConfirmStep("second");
+                }}
+              >
+                次へ
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* 全員送信 2段目 */}
+        <AlertDialog
+          open={confirmStep === "second"}
+          onOpenChange={(o) => !o && setConfirmStep("closed")}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>本番送信の最終確認(2/2)</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2 text-sm">
+                  <div className="rounded-md bg-muted/50 p-3 space-y-1">
+                    <p>
+                      <span className="text-muted-foreground">送信先: </span>
+                      <span className="font-medium">{eligibleCount} 人</span>
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">件名: </span>
+                      <span className="font-medium break-all">{subject}</span>
+                    </p>
+                  </div>
+                  <p className="text-destructive font-medium">
+                    本当に送信しますか? この操作は取り消せません。
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleMassSend}
+                className="bg-primary hover:bg-primary/90"
+              >
+                送信する
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* 削除確認 */}
         <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
