@@ -184,6 +184,136 @@ export type Database = {
         }
         Relationships: []
       }
+      email_campaigns: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          created_at: string
+          created_by: string | null
+          failed_count: number
+          id: string
+          send_lock_at: string | null
+          send_lock_token: string | null
+          sent_at: string | null
+          sent_count: number
+          status: string
+          subject: string
+          target_filter: Json
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
+          id?: string
+          send_lock_at?: string | null
+          send_lock_token?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject: string
+          target_filter?: Json
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          failed_count?: number
+          id?: string
+          send_lock_at?: string | null
+          send_lock_token?: string | null
+          sent_at?: string | null
+          sent_count?: number
+          status?: string
+          subject?: string
+          target_filter?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_send_logs: {
+        Row: {
+          campaign_id: string
+          error_message: string | null
+          id: string
+          recipient_email: string
+          recipient_user_id: string | null
+          resend_message_id: string | null
+          retry_count: number
+          sent_at: string
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          recipient_user_id?: string | null
+          resend_message_id?: string | null
+          retry_count?: number
+          sent_at?: string
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          recipient_user_id?: string | null
+          resend_message_id?: string | null
+          retry_count?: number
+          sent_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_send_logs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_unsubscribe_tokens: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          email: string
+          token: string
+          used_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          email: string
+          token: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          email?: string
+          token?: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_unsubscribe_tokens_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       login_bonus_claimed: {
         Row: {
           claimed_at: string
@@ -359,6 +489,7 @@ export type Database = {
           dispatch_company: string | null
           display_name: string | null
           email: string | null
+          email_opt_out: boolean
           employment_type: string | null
           facility_name: string | null
           first_launch_date: string
@@ -392,6 +523,7 @@ export type Database = {
           dispatch_company?: string | null
           display_name?: string | null
           email?: string | null
+          email_opt_out?: boolean
           employment_type?: string | null
           facility_name?: string | null
           first_launch_date?: string
@@ -425,6 +557,7 @@ export type Database = {
           dispatch_company?: string | null
           display_name?: string | null
           email?: string | null
+          email_opt_out?: boolean
           employment_type?: string | null
           facility_name?: string | null
           first_launch_date?: string
@@ -687,6 +820,10 @@ export type Database = {
       }
     }
     Functions: {
+      acquire_campaign_send_lock: {
+        Args: { p_campaign_id: string }
+        Returns: boolean
+      }
       change_user_role: {
         Args: { new_role: string; target_user_id: string }
         Returns: undefined
@@ -722,6 +859,16 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_profile_complete: { Args: { _user_id: string }; Returns: boolean }
+      release_campaign_send_lock: {
+        Args: {
+          p_campaign_id: string
+          p_failed_count: number
+          p_sent_count: number
+          p_status: string
+        }
+        Returns: undefined
+      }
+      use_unsubscribe_token: { Args: { p_token: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
