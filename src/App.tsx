@@ -12,6 +12,7 @@ import PointsPage from "./pages/PointsPage";
 import ReferralPage from "./pages/ReferralPage";
 import AuthPage from "./pages/AuthPage";
 import WelcomePage from "./pages/WelcomePage";
+import UnsubscribePage from "./pages/UnsubscribePage";
 import PrefectureRankingPage from "./pages/PrefectureRankingPage";
 import Achievements from "./pages/Achievements";
 import ColumnDetailPage from "./pages/ColumnDetailPage";
@@ -61,6 +62,7 @@ const App = () => (
           <Routes>
             <Route path="/welcome" element={<WelcomePage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/unsubscribe" element={<UnsubscribePage />} />
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/shift" element={<ProtectedRoute><ShiftPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
