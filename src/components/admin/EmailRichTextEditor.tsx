@@ -47,11 +47,6 @@ const VARIABLES: { token: string; label: string; description: string }[] = [
     label: "受信者のメールアドレス",
     description: "送信先メアド",
   },
-  {
-    token: "{{unsubscribe_url}}",
-    label: "配信停止 URL (法令必須)",
-    description: "本文に必ず1つ以上含めてください",
-  },
 ];
 
 const EmailRichTextEditor = ({ content, onChange }: EmailRichTextEditorProps) => {

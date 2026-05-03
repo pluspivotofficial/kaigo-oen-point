@@ -40,6 +40,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
 import EmailRichTextEditor from "@/components/admin/EmailRichTextEditor";
+import { wrapWithSakuraTemplate } from "@/lib/emailTemplate";
 
 type CampaignStatus = "draft" | "sending" | "sent" | "partial_failed" | "failed";
 
@@ -144,14 +145,12 @@ const AdminEmailCampaignEditPage = () => {
     })();
   }, [id, navigate]);
 
-  // バリデーション (法令準拠: {{unsubscribe_url}} 必須)
+  // バリデーション (配信停止リンクはテンプレ側で自動挿入)
   const validation = useMemo(() => {
     const errors: string[] = [];
     if (!subject.trim()) errors.push("件名が空です");
     if (!bodyHtml || bodyHtml === "<p></p>")
       errors.push("本文が空です");
-    if (!bodyHtml.includes("{{unsubscribe_url}}"))
-      errors.push("配信停止リンク {{unsubscribe_url}} が本文に含まれていません (法令必須)");
     return {
       ok: errors.length === 0,
       errors,
@@ -376,9 +375,8 @@ const AdminEmailCampaignEditPage = () => {
                 本文 <span className="text-destructive">*</span>
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                配信停止リンクはツールバーの「変数」ボタンから{" "}
-                <code className="text-[10px] bg-muted px-1 rounded">{"{{unsubscribe_url}}"}</code>{" "}
-                を本文末尾に挿入してください(法令必須)。
+                配信停止リンクとフッター(運営情報・著作表記)は送信時に自動で付与されます。
+                本文には自由に書いてください。
               </p>
             </div>
             <Tabs defaultValue="edit" className="w-full">
@@ -412,26 +410,25 @@ const AdminEmailCampaignEditPage = () => {
               </TabsContent>
 
               <TabsContent value="preview" className="mt-3">
-                <div className="rounded-lg border bg-muted/20 p-2">
-                  <p className="text-[10px] text-muted-foreground mb-2 px-2 pt-1">
-                    プレビュー用変数: name=「山田 太郎」 / email=「example@kaigopoint.com」 /
-                    unsubscribe_url=ダミーリンク
-                  </p>
-                  <div
-                    className="prose prose-sm max-w-none bg-background border rounded-md p-5 [&_a]:text-primary [&_a]:underline [&_img]:max-w-full [&_img]:rounded-md"
-                    dangerouslySetInnerHTML={{
-                      __html: substitutePreview(bodyHtml),
-                    }}
-                  />
-                </div>
+                <p className="text-[10px] text-muted-foreground mb-2">
+                  プレビュー用変数: name=「山田 太郎」 / email=「example@kaigopoint.com」 /
+                  配信停止リンク=ダミー。実際の送信ではテンプレ側で自動付与されます。
+                </p>
+                <iframe
+                  title="メールプレビュー"
+                  srcDoc={substitutePreview(wrapWithSakuraTemplate(bodyHtml))}
+                  className="w-full min-h-[640px] rounded-lg border bg-white"
+                  sandbox=""
+                />
               </TabsContent>
 
               <TabsContent value="code" className="mt-3">
                 <p className="text-[10px] text-muted-foreground mb-2">
-                  Outlook / Gmail での崩れを確認したい場合に使います(読み取り専用)。
+                  実際に送信される完全な HTML(sakura テンプレート + 本文)。
+                  Outlook / Gmail での崩れを確認するときに使います。
                 </p>
                 <Textarea
-                  value={bodyHtml}
+                  value={substitutePreview(wrapWithSakuraTemplate(bodyHtml))}
                   readOnly
                   className="font-mono text-xs min-h-[320px] bg-muted/30"
                 />
