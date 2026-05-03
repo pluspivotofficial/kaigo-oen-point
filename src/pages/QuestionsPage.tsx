@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import AppLayout from "@/components/AppLayout";
+import { useAchievement } from "@/contexts/AchievementContext";
 
 interface Question {
   id: string;
@@ -50,6 +51,7 @@ const getStatusBadge = (question: Question) => {
 const QuestionsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showPoints, checkAchievements } = useAchievement();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -133,12 +135,16 @@ const QuestionsPage = () => {
     if (!user || !title.trim()) return;
     setSubmitting(true);
 
-    const { error } = await supabase.from("questions").insert({
-      user_id: user.id,
-      title: title.trim(),
-      body: body.trim(),
-      anonymous_name: getRandomAnonymousName(),
-    });
+    const { data: inserted, error } = await supabase
+      .from("questions")
+      .insert({
+        user_id: user.id,
+        title: title.trim(),
+        body: body.trim(),
+        anonymous_name: getRandomAnonymousName(),
+      })
+      .select()
+      .single();
 
     if (error) {
       toast({ title: "エラー", description: error.message, variant: "destructive" });
@@ -152,6 +158,26 @@ const QuestionsPage = () => {
     setDialogOpen(false);
     await fetchQuestions();
     setSubmitting(false);
+
+    // H-2: +5pt 付与 RPC (silent fail 設計、granted=false なら何もしない)
+    if (inserted?.id) {
+      try {
+        const { data: result } = await supabase.rpc("grant_question_post_points", {
+          p_question_id: inserted.id,
+        });
+        const granted = (result as any)?.granted === true;
+        if (granted) {
+          const points = (result as any)?.points ?? 5;
+          showPoints(points, "掲示板投稿ボーナス");
+          // 投稿系バッジが将来追加されたら自動で発火
+          checkAchievements();
+        }
+        // granted=false (too_short / rate_limit / already_granted) は silent
+      } catch (e) {
+        // RPC失敗時もユーザーには見せない (投稿自体は成功している)
+        console.warn("[QuestionsPage] grant_question_post_points failed", e);
+      }
+    }
   };
 
   return (

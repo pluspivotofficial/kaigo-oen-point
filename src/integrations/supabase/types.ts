@@ -709,6 +709,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      grant_question_post_points: {
+        Args: { p_question_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
