@@ -177,19 +177,29 @@ const Dashboard = () => {
     },
   });
 
-  // Notices
+  // Notices (期限フィルタ込み)
   const { data: notices = [] } = useQuery({
     queryKey: ["notices_published"],
     queryFn: async () => {
       const { data } = await supabase
         .from("notices")
-        .select("id, title, description, category, display_order")
+        .select("id, title, description, category, display_order, start_date, end_date")
         .eq("is_published", true)
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: false });
-      return data ?? [];
+      const today = new Date().toISOString().split("T")[0];
+      // 期間フィルタ: start_date <= today AND (end_date IS NULL OR end_date >= today)
+      return (data ?? []).filter((n: any) => {
+        if (n.start_date && n.start_date > today) return false;
+        if (n.end_date && n.end_date < today) return false;
+        return true;
+      });
     },
   });
+
+  // バナー (category='banner') を分離してヒーロー位置に表示
+  const bannerNotices = (notices as any[]).filter((n) => n.category === "banner");
+  const otherNotices = (notices as any[]).filter((n) => n.category !== "banner");
 
   const handleSavePrefecture = async (value: string) => {
     if (!user) return;
@@ -215,7 +225,32 @@ const Dashboard = () => {
       }
     >
       <ProfileCompletionBanner profile={profile} />
-      <CampaignBanner profile={profile} />
+
+      {/* DB駆動 ヒーローバナー (category='banner' の notices、期間中のもの) */}
+      {bannerNotices.map((b) => (
+        <Card
+          key={b.id}
+          variant="sakura-highlight"
+          className="mb-5 animate-pop-in"
+        >
+          <CardContent className="p-5 text-center">
+            <p className="text-xs font-display font-bold text-white/80 tracking-widest mb-2">
+              ✿ お知らせ ✿
+            </p>
+            <h3 className="text-lg font-display font-black text-white mb-2">
+              {b.title}
+            </h3>
+            <p className="text-sm text-white/90 font-body whitespace-pre-line">
+              {b.description}
+            </p>
+            {b.end_date && (
+              <p className="text-xs text-white/70 mt-3 font-display">
+                〜 {new Date(b.end_date).toLocaleDateString("ja-JP")} まで
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ))}
 
       {profile && !prefecture && (
         <Card className="mb-5 border-secondary/30 bg-secondary/5">
@@ -413,14 +448,14 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Notices & Campaigns */}
-      {notices.length > 0 && (
+      {/* Notices & Campaigns (banner 以外を一覧表示) */}
+      {otherNotices.length > 0 && (
         <>
           <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
             お知らせ・キャンペーン
           </h2>
           <div className="space-y-3 mb-6">
-            {notices.map((notice: any) => {
+            {otherNotices.map((notice: any) => {
               const meta = NOTICE_CATEGORY_META[notice.category] ?? NOTICE_CATEGORY_META.info;
               const Icon = meta.icon;
               return (

@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          bonus_points: number
+          category: string
+          created_at: string
+          description: string
+          display_order: number
+          emoji: string
+          id: string
+          name: string
+        }
+        Insert: {
+          bonus_points?: number
+          category: string
+          created_at?: string
+          description: string
+          display_order?: number
+          emoji: string
+          id: string
+          name: string
+        }
+        Update: {
+          bonus_points?: number
+          category?: string
+          created_at?: string
+          description?: string
+          display_order?: number
+          emoji?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       admin_action_logs: {
         Row: {
           action_type: string
@@ -208,8 +241,10 @@ export type Database = {
           created_at: string
           description: string
           display_order: number
+          end_date: string | null
           id: string
           is_published: boolean
+          start_date: string | null
           title: string
           updated_at: string
         }
@@ -218,8 +253,10 @@ export type Database = {
           created_at?: string
           description: string
           display_order?: number
+          end_date?: string | null
           id?: string
           is_published?: boolean
+          start_date?: string | null
           title: string
           updated_at?: string
         }
@@ -228,8 +265,10 @@ export type Database = {
           created_at?: string
           description?: string
           display_order?: number
+          end_date?: string | null
           id?: string
           is_published?: boolean
+          start_date?: string | null
           title?: string
           updated_at?: string
         }
@@ -589,6 +628,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -623,6 +691,10 @@ export type Database = {
         Args: { new_role: string; target_user_id: string }
         Returns: undefined
       }
+      check_and_grant_achievements: {
+        Args: { target_user_id?: string }
+        Returns: Json
+      }
       get_referral_user_points: {
         Args: { _referrer_id: string }
         Returns: {
@@ -645,6 +717,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_profile_complete: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

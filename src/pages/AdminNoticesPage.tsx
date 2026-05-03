@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Gift, CalendarCheck, Sparkles, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Megaphone, Gift, CalendarCheck, Sparkles, Eye, EyeOff, Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,10 +21,13 @@ interface Notice {
   category: string;
   is_published: boolean;
   display_order: number;
+  start_date: string | null;
+  end_date: string | null;
   created_at: string;
 }
 
 const CATEGORY_OPTIONS = [
+  { value: "banner", label: "🎉 ヒーローバナー", icon: Star, color: "bg-coral/10 text-coral" },
   { value: "campaign", label: "キャンペーン", icon: Gift, color: "bg-reward-purple/10 text-reward-purple" },
   { value: "info", label: "お知らせ", icon: Megaphone, color: "bg-primary/10 text-primary" },
   { value: "event", label: "イベント", icon: CalendarCheck, color: "bg-primary/10 text-primary" },
@@ -86,6 +89,8 @@ const AdminNoticesPage = () => {
       category: editing.category ?? "info",
       is_published: editing.is_published ?? true,
       display_order: Number(editing.display_order ?? 0),
+      start_date: editing.start_date ?? null,
+      end_date: editing.end_date ?? null,
     };
     const { error } = editing.id
       ? await supabase.from("notices").update(payload).eq("id", editing.id)
@@ -219,6 +224,30 @@ const AdminNoticesPage = () => {
                 onChange={(e) => setEditing((p) => ({ ...p, description: e.target.value }))}
                 placeholder="お知らせの内容を入力..."
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">表示開始日 (任意)</Label>
+                <Input
+                  type="date"
+                  value={editing?.start_date ?? ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({ ...p, start_date: e.target.value || null }))
+                  }
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">空 = 即時表示</p>
+              </div>
+              <div>
+                <Label className="text-xs">表示終了日 (任意)</Label>
+                <Input
+                  type="date"
+                  value={editing?.end_date ?? ""}
+                  onChange={(e) =>
+                    setEditing((p) => ({ ...p, end_date: e.target.value || null }))
+                  }
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">空 = 無期限</p>
+              </div>
             </div>
             <div>
               <Label className="text-xs">表示順 (小さいほど上)</Label>
