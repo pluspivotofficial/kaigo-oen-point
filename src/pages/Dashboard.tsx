@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { useLoginBonus } from "@/hooks/useLoginBonus";
 import { useProfile, useTotalPoints, useMonthlyPoints, useIsAdmin, useUserPointStats } from "@/hooks/useProfile";
 import GreetingHeader from "@/components/GreetingHeader";
+import MitsubaMessage from "@/components/home/MitsubaMessage";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ColumnPreview {
@@ -225,6 +226,9 @@ const Dashboard = () => {
       }
     >
       <ProfileCompletionBanner profile={profile} />
+
+      {/* H-4: みつばからの一言 */}
+      <MitsubaMessage />
 
       {/* DB駆動 ヒーローバナー (category='banner' の notices、期間中のもの) */}
       {bannerNotices.map((b) => (
