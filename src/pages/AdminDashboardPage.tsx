@@ -6,6 +6,7 @@ import {
   TrendingUp,
   TrendingDown,
   LineChart as LineChartIcon,
+  Share2,
 } from "lucide-react";
 import {
   LineChart,
@@ -25,7 +26,29 @@ interface KpiData {
   newThisMonth: number;
   pointsIssued: number;
   pointsUsed: number;
+  invited: number;
+  registered: number;
+  profileCompleted: number;
 }
+
+const fmtRate = (num: number, denom: number): string =>
+  denom === 0 ? "-" : `${Math.round((num / denom) * 100)}%`;
+
+const FunnelRow = ({ label, value }: { label: string; value: number }) => (
+  <div className="flex items-baseline justify-between">
+    <span className="text-sm text-foreground">{label}</span>
+    <span className="text-base font-semibold tabular-nums">
+      {value.toLocaleString()}
+    </span>
+  </div>
+);
+
+const FunnelArrow = ({ rate }: { rate: string }) => (
+  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground py-0.5">
+    <span aria-hidden>↓</span>
+    <span className="tabular-nums">{rate}</span>
+  </div>
+);
 
 interface DailyPoint {
   date: string;       // "MM/DD" 表示用
@@ -94,6 +117,9 @@ const AdminDashboardPage = () => {
     newThisMonth: 0,
     pointsIssued: 0,
     pointsUsed: 0,
+    invited: 0,
+    registered: 0,
+    profileCompleted: 0,
   });
   const [trendCreatedAts, setTrendCreatedAts] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +139,9 @@ const AdminDashboardPage = () => {
       { count: newThisMonth, error: e2 },
       { data: pointsData, error: e3 },
       { data: trendData, error: e4 },
+      { count: invited, error: e5 },
+      { count: registered, error: e6 },
+      { count: profileCompleted, error: e7 },
     ] = await Promise.all([
       supabase
         .from("profiles")
@@ -127,12 +156,26 @@ const AdminDashboardPage = () => {
         .select("created_at")
         .gte("created_at", trendStart)
         .order("created_at", { ascending: true }),
+      supabase
+        .from("referrals")
+        .select("*", { count: "exact", head: true }),
+      supabase
+        .from("referrals")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "completed_registered"),
+      supabase
+        .from("referrals")
+        .select("*", { count: "exact", head: true })
+        .not("profile_bonus_granted_at", "is", null),
     ]);
 
     if (e1) console.error("total users", e1);
     if (e2) console.error("new this month", e2);
     if (e3) console.error("points data", e3);
     if (e4) console.error("trend data", e4);
+    if (e5) console.error("referrals invited", e5);
+    if (e6) console.error("referrals registered", e6);
+    if (e7) console.error("referrals profile completed", e7);
 
     let issued = 0;
     let used = 0;
@@ -146,6 +189,9 @@ const AdminDashboardPage = () => {
       newThisMonth: newThisMonth ?? 0,
       pointsIssued: issued,
       pointsUsed: used,
+      invited: invited ?? 0,
+      registered: registered ?? 0,
+      profileCompleted: profileCompleted ?? 0,
     });
     setTrendCreatedAts((trendData ?? []).map((r) => r.created_at as string));
     setLoading(false);
@@ -270,6 +316,47 @@ const AdminDashboardPage = () => {
                 </ResponsiveContainer>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* 紹介ファネル */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Share2 className="h-4 w-4 text-primary" />
+              紹介ファネル
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-muted-foreground text-center py-6 text-sm">
+                読み込み中...
+              </p>
+            ) : (
+              <>
+                <div className="space-y-1.5 max-w-md">
+                  <FunnelRow label="招待発行" value={data.invited} />
+                  <FunnelArrow rate={fmtRate(data.registered, data.invited)} />
+                  <FunnelRow label="登録完了" value={data.registered} />
+                  <FunnelArrow
+                    rate={fmtRate(data.profileCompleted, data.registered)}
+                  />
+                  <FunnelRow
+                    label="プロフ完了"
+                    value={data.profileCompleted}
+                  />
+                </div>
+                <div className="mt-4 pt-3 border-t border-border flex justify-between items-baseline max-w-md">
+                  <span className="text-sm font-bold">全体歩留まり</span>
+                  <span className="text-base font-bold tabular-nums">
+                    {fmtRate(data.profileCompleted, data.invited)}
+                    <span className="text-xs font-normal text-muted-foreground ml-1.5">
+                      ({data.profileCompleted}/{data.invited})
+                    </span>
+                  </span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
