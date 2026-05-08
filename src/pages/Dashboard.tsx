@@ -16,6 +16,7 @@ import { useProfile, useTotalPoints, useMonthlyPoints, useIsAdmin, useUserPointS
 import GreetingHeader from "@/components/GreetingHeader";
 import NaoMessage from "@/components/home/NaoMessage";
 import HopKaigoLineCard from "@/components/home/HopKaigoLineCard";
+import SurveyCard from "@/components/home/SurveyCard";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface ColumnPreview {
@@ -337,6 +338,9 @@ const Dashboard = () => {
               </div>
             </CardContent>
       </Card>
+
+      {/* H-9: フィードバックアンケート */}
+      <SurveyCard />
 
       {/* 実績サマリー (Quick Actions の上) */}
       <Card
