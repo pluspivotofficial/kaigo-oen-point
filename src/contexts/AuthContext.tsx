@@ -66,6 +66,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
   }, [session?.user?.id, loading]);
 
+  // H-8: email 確認後の初回ログイン時に紹介紐付けを自動実行
+  // signUp 時の RPC は session 未確立で no_session になるため、
+  // 確認完了後の初回 onAuthStateChange を捕まえて RPC を起動する。
+  // referral_processed_at で idempotency 保証 (再ログインで重複処理しない)。
+  useEffect(() => {
+    if (loading) return;
+    const user = session?.user;
+    if (!user) return;
+    const refCode = (user.user_metadata as Record<string, unknown> | undefined)
+      ?.referral_code;
+    if (!refCode || typeof refCode !== "string") return;
+
+    void (async () => {
+      // 既処理チェック
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("referral_processed_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if ((profile as { referral_processed_at?: string | null } | null)?.referral_processed_at) {
+        return;
+      }
+
+      // RPC 呼出 (idempotent、no_session/already_granted/not_found 等は silent)
+      const { error } = await supabase.rpc(
+        "apply_referral_signup_bonus",
+        { p_referral_code: refCode }
+      );
+      if (error) {
+        console.error("[referral-auto-link] RPC error:", error);
+        return; // フラグセットしない → 次ログイン時に再試行
+      }
+
+      // 結果に関わらず processed フラグセット (再試行ループ防止、idempotency 保証)
+      await supabase
+        .from("profiles")
+        .update({ referral_processed_at: new Date().toISOString() } as never)
+        .eq("user_id", user.id);
+    })();
+  }, [session?.user?.id, loading]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };

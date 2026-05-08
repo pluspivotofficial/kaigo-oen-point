@@ -85,9 +85,12 @@ const AuthPage = () => {
         });
         if (error) throw error;
 
-        if (referralCode && signUpData.user) {
-          await processReferralCode(referralCode);
-        }
+        // H-8: 紹介コードの紐付けは email 確認後の初回ログイン時に
+        // AuthContext が自動実行する。signUp 時点では session 未確立で
+        // RPC が no_session になるため、ここでは何もしない。
+        // referral_code は user_metadata に保存されており、
+        // AuthContext が user.user_metadata.referral_code を参照する。
+        void signUpData;
 
         toast({
           title: "アカウントを作成しました！",
@@ -99,47 +102,6 @@ const AuthPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // H-8: SECURITY DEFINER RPC に集約。RLS バイパス + atomic + idempotent。
-  // 旧多段クエリの silently-fail 問題を根治。
-  const processReferralCode = async (code: string) => {
-    const { data, error } = await supabase.rpc(
-      "apply_referral_signup_bonus",
-      { p_referral_code: code }
-    );
-
-    if (error) {
-      console.error("Referral RPC error:", error);
-      toast({
-        title: "招待コードの紐付けに失敗しました",
-        description: "サポートまでお問い合わせください。",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const result = data as unknown as {
-      granted: boolean;
-      reason?: string;
-      points?: number;
-    };
-
-    // 期待される非エラーは silent (UI 表示なし)
-    // - self_referral: 自分のコードで登録 → 静かに無視
-    // - already_granted: 再登録時の冪等
-    // - no_session: signUp 直後の session 未確立(将来 deferred 対応)
-    // - not_found: コード不一致(タイポ等、悪意推定回避で silent)
-    // - race_lost: 同時登録の敗者(極稀)
-    if (!result?.granted) {
-      const reason = result?.reason ?? "unknown";
-      if (!["self_referral", "already_granted", "no_session", "not_found", "race_lost"].includes(reason)) {
-        console.warn("Referral not granted (unexpected reason):", reason);
-      }
-      return;
-    }
-
-    // 成功時: 既存 signup toast に統合(個別 toast は出さない)
   };
 
   return (
