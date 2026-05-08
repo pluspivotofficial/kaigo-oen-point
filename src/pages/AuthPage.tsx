@@ -86,7 +86,7 @@ const AuthPage = () => {
         if (error) throw error;
 
         if (referralCode && signUpData.user) {
-          await processReferralCode(referralCode, signUpData.user.id, displayName);
+          await processReferralCode(referralCode);
         }
 
         toast({
@@ -101,62 +101,45 @@ const AuthPage = () => {
     }
   };
 
-  const processReferralCode = async (code: string, newUserId: string, userName: string) => {
-    try {
-      const { data: referral } = await supabase
-        .from("referrals")
-        .select("*")
-        .eq("referral_code", code)
-        .eq("status", "pending")
-        .single();
+  // H-8: SECURITY DEFINER RPC に集約。RLS バイパス + atomic + idempotent。
+  // 旧多段クエリの silently-fail 問題を根治。
+  const processReferralCode = async (code: string) => {
+    const { data, error } = await supabase.rpc(
+      "apply_referral_signup_bonus",
+      { p_referral_code: code }
+    );
 
-      if (!referral) return;
-
-      // 自演紹介チェック (referrer 自身が自分のコードで登録するケースを防止)
-      if (referral.referrer_id === newUserId) {
-        console.warn("Self-referral attempt blocked", { referrer: referral.referrer_id });
-        return;
-      }
-
-      // referrals 行を更新 (登録完了状態へ遷移)
-      await supabase
-        .from("referrals")
-        .update({
-          status: "completed_registered",
-          referred_user_id: newUserId,
-          friend_name: userName || email,
-          points_awarded: true,
-        } as any)
-        .eq("id", referral.id);
-
-      // Step1 ボーナス: signup_bonus_granted_at IS NULL のときだけ両方付与
-      if (!(referral as any).signup_bonus_granted_at) {
-        // 紹介人 +100pt
-        await supabase.from("points_history").insert({
-          user_id: referral.referrer_id,
-          description: "紹介ボーナス[Step1]登録完了",
-          points: 100,
-          type: "earn",
-        });
-
-        // 被紹介人 +100pt
-        await supabase.from("points_history").insert({
-          user_id: newUserId,
-          description: "紹介ボーナス[Step1]登録完了",
-          points: 100,
-          type: "earn",
-        });
-
-        // タイムスタンプセット (重複付与防止)
-        await supabase
-          .from("referrals")
-          .update({ signup_bonus_granted_at: new Date().toISOString() } as any)
-          .eq("id", referral.id);
-      }
-
-    } catch (err) {
-      console.error("Referral processing error:", err);
+    if (error) {
+      console.error("Referral RPC error:", error);
+      toast({
+        title: "招待コードの紐付けに失敗しました",
+        description: "サポートまでお問い合わせください。",
+        variant: "destructive",
+      });
+      return;
     }
+
+    const result = data as unknown as {
+      granted: boolean;
+      reason?: string;
+      points?: number;
+    };
+
+    // 期待される非エラーは silent (UI 表示なし)
+    // - self_referral: 自分のコードで登録 → 静かに無視
+    // - already_granted: 再登録時の冪等
+    // - no_session: signUp 直後の session 未確立(将来 deferred 対応)
+    // - not_found: コード不一致(タイポ等、悪意推定回避で silent)
+    // - race_lost: 同時登録の敗者(極稀)
+    if (!result?.granted) {
+      const reason = result?.reason ?? "unknown";
+      if (!["self_referral", "already_granted", "no_session", "not_found", "race_lost"].includes(reason)) {
+        console.warn("Referral not granted (unexpected reason):", reason);
+      }
+      return;
+    }
+
+    // 成功時: 既存 signup toast に統合(個別 toast は出さない)
   };
 
   return (
