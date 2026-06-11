@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { User, MapPin, Briefcase, Award, Check, CalendarDays, Building2, DollarSign, Phone, Heart, HelpCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { trackProfileComplete } from "@/lib/analytics";
 import AppLayout from "@/components/AppLayout";
 import { resetTutorials } from "@/components/AppTutorial";
 import { useNavigate } from "react-router-dom";
@@ -248,6 +249,12 @@ const ProfilePage = () => {
     // (順序逆だと永遠に発火しない問題) → 毎回 save 後に判定
     const fieldsUpTo9 = [...BASIC_FIELDS, ...WORK_FIELDS.slice(0, 4)];
     const all9Filled = fieldsUpTo9.every((f) => isFieldFilled(f.key, profile[f.key]));
+
+    const orig9Filled = fieldsUpTo9.every((f) => isFieldFilled(f.key, originalProfile[f.key]));
+    if (all9Filled && !orig9Filled) {
+      trackProfileComplete();
+    }
+
     if (all9Filled) {
       const { data: refData } = await supabase
         .from("referrals")

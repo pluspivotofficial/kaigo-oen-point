@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { LogIn, UserPlus, Gift, Clock, ExternalLink, Ticket, AlertTriangle } from "lucide-react";
 import appLogo from "@/assets/logo.png";
+import { trackSignUp } from "@/lib/analytics";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -91,6 +92,8 @@ const AuthPage = () => {
         // referral_code は user_metadata に保存されており、
         // AuthContext が user.user_metadata.referral_code を参照する。
         void signUpData;
+
+        trackSignUp();
 
         toast({
           title: "アカウントを作成しました！",
